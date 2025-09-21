@@ -44,6 +44,7 @@ const prompt = ai.definePrompt({
   },
   output: {
     schema: GenerateTimedNarrativeOutputSchema,
+    format: 'json',
   },
   prompt: `You are an AI narrator, creating a compelling, human-readable story of the data, in sync with the generated audio.
 
@@ -62,9 +63,6 @@ const prompt = ai.definePrompt({
     { "timestamp": 2.1, "text": "Notice the anomaly here." }
   ]
   `,
-  config: {
-    responseMimeType: 'application/json',
-  },
 });
 
 const generateTimedNarrativeFlow = ai.defineFlow(

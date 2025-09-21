@@ -39,13 +39,13 @@ export async function analyzeDataAndGenerateInsights(
 const analyzeDataAndGenerateInsightsPrompt = ai.definePrompt({
   name: 'analyzeDataAndGenerateInsightsPrompt',
   input: {schema: AnalyzeDataAndGenerateInsightsInputSchema},
-  output: {schema: AnalyzeDataAndGenerateInsightsOutputSchema},
+  output: {
+    schema: AnalyzeDataAndGenerateInsightsOutputSchema,
+    format: 'json',
+  },
   prompt: `You are a data analysis expert. Analyze the following {{inputType}} data and generate insights, identifying trends, patterns, and sentiment.
 
 Data: {{{inputData}}}`,
-  config: {
-    responseMimeType: 'application/json',
-  },
 });
 
 const analyzeDataAndGenerateInsightsFlow = ai.defineFlow(

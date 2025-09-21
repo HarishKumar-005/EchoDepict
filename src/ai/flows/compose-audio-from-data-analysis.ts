@@ -32,7 +32,10 @@ export async function composeAudioFromDataAnalysis(input: ComposeAudioFromDataAn
 const prompt = ai.definePrompt({
   name: 'composeAudioFromDataAnalysisPrompt',
   input: {schema: ComposeAudioFromDataAnalysisInputSchema},
-  output: {schema: ComposeAudioFromDataAnalysisOutputSchema},
+  output: {
+    schema: ComposeAudioFromDataAnalysisOutputSchema,
+    format: 'json',
+  },
   prompt: `You are an expert music composer translating data analysis into music theory.
 
 You will make a series of AUTONOMOUS DECISIONS to translate the analysis into music theory. You will decide the key (e.g., C minor for negative sentiment), tempo, instrumentation (e.g., strings for smooth trends, percussive hits for outliers), and the precise mapping of data values to musical notes (pitch, duration, velocity).
@@ -41,9 +44,6 @@ Here is the data analysis:
 {{{analysis}}}
 
 Output the final audioMapping JSON object, which serves as the "sheet music".`,
-  config: {
-    responseMimeType: 'application/json',
-  },
 });
 
 const composeAudioFromDataAnalysisFlow = ai.defineFlow(
