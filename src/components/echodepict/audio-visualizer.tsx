@@ -21,14 +21,6 @@ type AudioVisualizerProps = {
 
 const FFT_SIZE = 256;
 
-// Neuronal Web specific settings
-const NODE_COUNT = 64; // Number of nodes, corresponds to FFT bins
-const MIN_NODE_RADIUS = 1;
-const MAX_NODE_RADIUS = 4;
-const CONNECTION_DISTANCE = 100; // Max distance to draw a connection
-const BREATHING_SPEED = 0.5; // Radians per second
-const BREATHING_AMOUNT = 0.02; // How much it scales
-
 export function AudioVisualizer({
   composition,
   isPlaying,
@@ -50,100 +42,50 @@ export function AudioVisualizer({
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Refs for Neuronal Web visualizer
-  const nodesRef = useRef<any[]>([]);
-  const lastBreathTime = useRef(0);
-  const breathAngle = useRef(0);
-
-  // Initialize nodes for the neuronal web
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas && nodesRef.current.length === 0) {
-        const tempNodes = [];
-        for (let i = 0; i < NODE_COUNT; i++) {
-            tempNodes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: MIN_NODE_RADIUS,
-                targetGlow: 0,
-                currentGlow: 0,
-            });
-        }
-        nodesRef.current = tempNodes;
-    }
-  }, []); // Run only once
-
+  // "Horizon Line" visualizer
   const draw = useCallback((fftValues: Float32Array, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) => {
     const { width, height } = canvas;
+    const center_y = height / 2;
     context.clearRect(0, 0, width, height);
 
-    const primaryHslRaw = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-    const primaryHsl = primaryHslRaw.split(' ').join(','); // Add commas for correct format
+    // Get theme colors
+    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const primaryColor = `hsl(${primaryHsl})`;
+    const luminousPrimaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary-foreground').trim();
+    const horizonColor = `hsl(${luminousPrimaryHsl})`;
 
-    const now = performance.now();
-    if (lastBreathTime.current === 0) lastBreathTime.current = now;
-    const deltaTime = (now - lastBreathTime.current) / 1000;
-    lastBreathTime.current = now;
+    // Draw Horizon Line
+    context.beginPath();
+    context.moveTo(0, center_y);
+    context.lineTo(width, center_y);
+    context.strokeStyle = horizonColor;
+    context.lineWidth = 1;
+    context.stroke();
+
+    // Prepare for glow effect
+    context.shadowBlur = 8;
+    context.shadowColor = primaryColor;
     
-    breathAngle.current += BREATHING_SPEED * deltaTime;
-    const breathScale = 1 + Math.sin(breathAngle.current) * BREATHING_AMOUNT;
+    context.fillStyle = primaryColor;
+    const barWidth = width / (fftValues.length / 2);
 
-    context.save();
-    context.translate(width / 2, height / 2);
-    context.scale(breathScale, breathScale);
-    context.translate(-width / 2, -height / 2);
+    // Draw mirrored bars
+    for (let i = 0; i < fftValues.length / 2; i++) {
+        // Normalize FFT value to a range of 0-1
+        const value = (fftValues[i] + 140) / 100; // Adjusted for better visual range
+        const barHeight = Math.max(0, Math.min(value * height * 0.4, height * 0.4));
 
-    const nodes = nodesRef.current;
-
-    // Update node glow based on FFT
-    for (let i = 0; i < NODE_COUNT; i++) {
-        const fftIndex = Math.floor(i * (fftValues.length / NODE_COUNT));
-        const value = (fftValues[fftIndex] + 140) / 100; // Normalize
-        nodes[i].targetGlow = Math.max(0, Math.min(1, value));
-        nodes[i].currentGlow += (nodes[i].targetGlow - nodes[i].currentGlow) * 0.2; // Smoothing
-    }
-
-    // Draw connections
-    for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-            const dx = nodes[i].x - nodes[j].x;
-            const dy = nodes[i].y - nodes[j].y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < CONNECTION_DISTANCE) {
-                const combinedGlow = (nodes[i].currentGlow + nodes[j].currentGlow) / 2;
-                context.beginPath();
-                context.moveTo(nodes[i].x, nodes[i].y);
-                context.lineTo(nodes[j].x, nodes[j].y);
-                context.strokeStyle = `hsla(${primaryHsl}, ${Math.max(0.05, combinedGlow * 0.5)})`;
-                context.lineWidth = 0.5 + combinedGlow;
-                context.stroke();
-            }
+        // Draw bar going upwards (treble)
+        if (i > fftValues.length / 4) {
+            context.fillRect(i * barWidth, center_y - barHeight, barWidth, barHeight);
+        } else {
+            // Draw bar going downwards (bass)
+            context.fillRect(i * barWidth, center_y, barWidth, barHeight);
         }
     }
-
-    // Draw nodes
-    nodes.forEach(node => {
-        // Draw main node
-        context.beginPath();
-        context.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        context.fillStyle = `hsla(${primaryHsl}, ${0.5 + node.currentGlow * 0.5})`;
-        context.fill();
-
-        // Draw glow
-        if (node.currentGlow > 0.1) {
-            const glowRadius = node.radius + node.currentGlow * 15;
-            const grad = context.createRadialGradient(node.x, node.y, node.radius, node.x, node.y, glowRadius);
-            grad.addColorStop(0, `hsla(${primaryHsl}, ${node.currentGlow * 0.8})`);
-            grad.addColorStop(1, `hsla(${primaryHsl}, 0)`);
-            context.fillStyle = grad;
-            context.beginPath();
-            context.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
-            context.fill();
-        }
-    });
-
-    context.restore();
+    
+    // Reset glow for other elements
+    context.shadowBlur = 0;
   }, []);
   
   const scheduleStop = useCallback(() => {
@@ -162,11 +104,10 @@ export function AudioVisualizer({
   useEffect(() => {
     if (!composition?.audioMapping) return;
 
-    // Cleanup previous instances
     partRef.current?.dispose();
     synthRef.current?.dispose();
     fftRef.current?.dispose();
-    Tone.Transport.cancel(); // Clear all scheduled events
+    Tone.Transport.cancel();
 
     synthRef.current = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'amsine' },
@@ -198,7 +139,6 @@ export function AudioVisualizer({
     };
   }, [composition]);
 
-
   // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -206,28 +146,14 @@ export function AudioVisualizer({
     const context = canvas.getContext('2d');
     if (!context) return;
     
-    // Resize canvas to fit container
     const resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
             const { width, height } = entry.contentRect;
             canvas.width = width;
             canvas.height = height;
-            // Re-initialize nodes on resize
-            const tempNodes = [];
-            for (let i = 0; i < NODE_COUNT; i++) {
-                tempNodes.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    radius: MIN_NODE_RADIUS,
-                    targetGlow: 0,
-                    currentGlow: 0,
-                });
-            }
-            nodesRef.current = tempNodes;
         }
     });
     resizeObserver.observe(canvas);
-
 
     let loop: () => void;
 
@@ -253,17 +179,14 @@ export function AudioVisualizer({
         }
         // Set a default "idle" state for the visualizer
         context.clearRect(0, 0, canvas.width, canvas.height);
-        draw(new Float32Array(FFT_SIZE).fill(-140), canvas, context);
-        if (currentTime !== 0) {
-          setCurrentTime(0);
-        }
+        draw(new Float32Array(FFT_SIZE / 2).fill(-140), canvas, context);
     }
 
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
       resizeObserver.disconnect();
     };
-  }, [isPlaying, draw, setCurrentTime, currentTime]);
+  }, [isPlaying, draw, setCurrentTime]);
 
   const handlePlayPause = useCallback(async () => {
     if (!composition) return;
@@ -278,7 +201,6 @@ export function AudioVisualizer({
       Tone.Transport.pause();
       setIsPlaying(false);
     } else {
-      // If playback finished, reset time before starting
       if (currentTime >= duration) {
         setCurrentTime(0);
         Tone.Transport.seconds = 0;
