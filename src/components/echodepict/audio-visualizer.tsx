@@ -42,54 +42,55 @@ export function AudioVisualizer({
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
 
-  // "Horizon Line" visualizer
+  // "Horizon Line" visualizer draw function
   const draw = useCallback((fftValues: Float32Array, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) => {
     const { width, height } = canvas;
     const center_y = height / 2;
     context.clearRect(0, 0, width, height);
 
-    // Get theme colors
+    // Get theme colors for dynamic styling
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     const primaryColor = `hsl(${primaryHsl})`;
-    const luminousPrimaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary-foreground').trim();
-    const horizonColor = `hsl(${luminousPrimaryHsl})`;
+    // Use a different color for the horizon line to make it stand out
+    const horizonColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--primary-foreground').trim()})`;
 
-    // Draw Horizon Line
+    // 1. Draw Horizon Line
     context.beginPath();
     context.moveTo(0, center_y);
     context.lineTo(width, center_y);
     context.strokeStyle = horizonColor;
-    context.lineWidth = 1;
+    context.lineWidth = 1.5;
     context.stroke();
 
-    // Prepare for glow effect
+    // 2. Prepare for glow effect for the bars
     context.shadowBlur = 8;
     context.shadowColor = primaryColor;
     
     context.fillStyle = primaryColor;
-    const barWidth = width / (fftValues.length / 2);
+    const barWidth = width / (fftValues.length / 2); // Use half of FFT data for symmetrical visual
 
-    // Draw mirrored bars
+    // 3. Draw mirrored bars
     for (let i = 0; i < fftValues.length / 2; i++) {
-        // Normalize FFT value to a range of 0-1
-        const value = (fftValues[i] + 140) / 100; // Adjusted for better visual range
-        const barHeight = Math.max(0, Math.min(value * height * 0.4, height * 0.4));
+        // Normalize FFT value (in decibels) to a more manageable visual range (0-1)
+        const value = (fftValues[i] + 140) / 100; // Adjusted for better visual sensitivity
+        const barHeight = Math.max(0, Math.min(value * height * 0.4, height * 0.4)); // Cap bar height
 
-        // Draw bar going upwards (treble)
+        // Draw bar going upwards for treble (second half of the used data)
         if (i > fftValues.length / 4) {
             context.fillRect(i * barWidth, center_y - barHeight, barWidth, barHeight);
         } else {
-            // Draw bar going downwards (bass)
+            // Draw bar going downwards for bass (first half of the used data)
             context.fillRect(i * barWidth, center_y, barWidth, barHeight);
         }
     }
     
-    // Reset glow for other elements
+    // Reset glow effect so it doesn't affect other UI elements
     context.shadowBlur = 0;
   }, []);
   
   const scheduleStop = useCallback(() => {
     if (duration > 0) {
+        // Use Tone.Draw.schedule to sync visual changes with audio thread
         Tone.Transport.scheduleOnce((time) => {
             Tone.Draw.schedule(() => {
                 setIsPlaying(false);
@@ -177,7 +178,7 @@ export function AudioVisualizer({
             cancelAnimationFrame(animationFrameId.current);
             animationFrameId.current = undefined;
         }
-        // Set a default "idle" state for the visualizer
+        // Set a default "idle" state for the visualizer, drawing a flat line
         context.clearRect(0, 0, canvas.width, canvas.height);
         draw(new Float32Array(FFT_SIZE / 2).fill(-140), canvas, context);
     }
@@ -191,6 +192,7 @@ export function AudioVisualizer({
   const handlePlayPause = useCallback(async () => {
     if (!composition) return;
     
+    // Fix: Activate AudioContext on the first user gesture (play click).
     if (!isAudioReady.current) {
       await Tone.start();
       isAudioReady.current = true;

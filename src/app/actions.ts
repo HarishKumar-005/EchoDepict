@@ -26,14 +26,14 @@ function parseDataMapping(
   inputType: 'csv' | 'text', 
   inputData?: string
 ): { notes: Note[], duration: number } {
-  // Validate that the AI output is an array.
+  // Validate that the AI output for dataMapping is an array.
   if (!Array.isArray(aiDataMapping)) {
     console.error("AI output for dataMapping was not an array:", aiDataMapping);
     throw new Error("Composer AI failed to generate a valid musical structure (expected an array).");
   }
 
   const notes: Note[] = [];
-  let maxTime = 0;
+  let maxTime = 0; // Initialize maxTime to 0. This will store the final duration.
   const csvRows = inputType === 'csv' && inputData ? inputData.split('\n').map(row => row.split(',')) : null;
 
   aiDataMapping.forEach((item: any, index: number) => {
@@ -54,16 +54,20 @@ function parseDataMapping(
         };
         notes.push(note);
         
-        // Correctly calculate the maximum end time of any note.
-        if (note.time + note.duration > maxTime) {
-          maxTime = note.time + note.duration;
+        // Calculate the exact end time of the current note.
+        const noteEndTime = note.time + note.duration;
+        
+        // If the current note's end time is greater than the maxTime seen so far, update maxTime.
+        if (noteEndTime > maxTime) {
+          maxTime = noteEndTime;
         }
     }
   });
 
   // Sort notes by their start time for correct playback scheduling.
   notes.sort((a, b) => a.time - b.time);
-
+  
+  // Return the parsed notes and the correctly calculated total duration.
   return { notes, duration: maxTime };
 }
 
