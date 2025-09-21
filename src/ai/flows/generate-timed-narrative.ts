@@ -1,4 +1,3 @@
-// src/ai/flows/generate-timed-narrative.ts
 'use server';
 /**
  * @fileOverview Generates a timed script that explains the audio in sync, providing a compelling narrative of the data.
@@ -63,6 +62,9 @@ const prompt = ai.definePrompt({
     { "timestamp": 2.1, "text": "Notice the anomaly here." }
   ]
   `,
+  config: {
+    responseMimeType: 'application/json',
+  },
 });
 
 const generateTimedNarrativeFlow = ai.defineFlow(

@@ -43,6 +43,9 @@ const analyzeDataAndGenerateInsightsPrompt = ai.definePrompt({
   prompt: `You are a data analysis expert. Analyze the following {{inputType}} data and generate insights, identifying trends, patterns, and sentiment.
 
 Data: {{{inputData}}}`,
+  config: {
+    responseMimeType: 'application/json',
+  },
 });
 
 const analyzeDataAndGenerateInsightsFlow = ai.defineFlow(

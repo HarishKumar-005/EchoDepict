@@ -41,6 +41,9 @@ Here is the data analysis:
 {{{analysis}}}
 
 Output the final audioMapping JSON object, which serves as the "sheet music".`,
+  config: {
+    responseMimeType: 'application/json',
+  },
 });
 
 const composeAudioFromDataAnalysisFlow = ai.defineFlow(
