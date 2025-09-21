@@ -13,43 +13,55 @@ const InputSchema = z.object({
 
 type Input = z.infer<typeof InputSchema>;
 
+/**
+ * Parses the raw AI output for `dataMapping` into a structured array of Notes 
+ * and calculates the total duration of the composition.
+ * @param aiDataMapping - The raw `dataMapping` property from the Composer agent.
+ * @param inputType - The type of user input ('csv' or 'text').
+ * @param inputData - The original user input data string.
+ * @returns An object containing the parsed notes array and the calculated duration.
+ */
 function parseDataMapping(
-  aiDataMapping: Record<string, any>, 
+  aiDataMapping: unknown, 
   inputType: 'csv' | 'text', 
   inputData?: string
 ): { notes: Note[], duration: number } {
+  // Validate that the AI output is an array.
+  if (!Array.isArray(aiDataMapping)) {
+    console.error("AI output for dataMapping was not an array:", aiDataMapping);
+    throw new Error("Composer AI failed to generate a valid musical structure (expected an array).");
+  }
+
   const notes: Note[] = [];
   let maxTime = 0;
   const csvRows = inputType === 'csv' && inputData ? inputData.split('\n').map(row => row.split(',')) : null;
 
-  const noteItems = Array.isArray(aiDataMapping) 
-    ? aiDataMapping 
-    : Object.values(aiDataMapping);
+  aiDataMapping.forEach((item: any, index: number) => {
+    // Basic validation for each note object.
+    const time = Number(item.time);
+    const duration = Number(item.duration);
 
-  noteItems.forEach((item: any, index: number) => {
-    // Check for the essential properties of a note
-    if (item.time !== undefined && item.note && item.duration) {
-      const time = Number(item.time);
-      const duration = Number(item.duration);
-
-      if (!isNaN(time) && !isNaN(duration)) {
+    if (item.note && !isNaN(time) && !isNaN(duration)) {
         const note: Note = {
           time,
           note: item.note,
           duration,
           velocity: item.velocity ?? 0.8,
+          // Assign source data for the Data Inspector.
           dataPoint: csvRows && csvRows.length > index + 1
             ? csvRows[index + 1].join(', ') 
             : `${inputType === 'text' ? 'Text segment' : 'Data point'} ${index + 1}`
         };
         notes.push(note);
+        
+        // Correctly calculate the maximum end time of any note.
         if (note.time + note.duration > maxTime) {
           maxTime = note.time + note.duration;
         }
-      }
     }
   });
 
+  // Sort notes by their start time for correct playback scheduling.
   notes.sort((a, b) => a.time - b.time);
 
   return { notes, duration: maxTime };
@@ -81,7 +93,7 @@ export async function runCompositionAgents(input: Input): Promise<{ success: tru
     const { notes, duration } = parseDataMapping(composerResult.audioMapping.dataMapping, validatedInput.type, validatedInput.data);
     
     if (notes.length === 0) {
-      const errorMsg = "The Composer AI failed to generate a valid musical structure. Please try a different input.";
+      const errorMsg = "The Composer AI failed to generate any valid musical notes. Please try a different input.";
       console.error(errorMsg);
       return { success: false, error: errorMsg };
     }
@@ -89,7 +101,7 @@ export async function runCompositionAgents(input: Input): Promise<{ success: tru
     const audioMapping = {
         ...composerResult.audioMapping,
         dataMapping: notes,
-        duration,
+        duration, // The correctly calculated total duration.
     };
     
     const narratorInput = {

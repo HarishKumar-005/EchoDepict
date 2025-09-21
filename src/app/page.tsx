@@ -32,6 +32,7 @@ export default function Home() {
       return;
     }
 
+    // Reset all relevant state before starting a new composition.
     setIsLoading(true);
     setComposition(null);
     setCurrentTime(0);
@@ -42,6 +43,7 @@ export default function Home() {
 
     if (result.success) {
       setComposition(result.data);
+      // Set the duration from the correctly calculated value in the backend.
       setDuration(result.data.audioMapping.duration);
       toast({
         title: 'Composition Complete',
@@ -58,9 +60,9 @@ export default function Home() {
   };
 
   const handleEnded = () => {
+    // This function is called from the visualizer when the audio finishes.
     setIsPlaying(false);
-    setCurrentTime(0);
-  }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-sans antialiased">
