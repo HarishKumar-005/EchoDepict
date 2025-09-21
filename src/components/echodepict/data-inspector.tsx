@@ -19,13 +19,17 @@ export function DataInspector({ currentTime, composition }: DataInspectorProps) 
       return;
     }
 
+    // This effect is for highlighting based on scrubbing, not continuous playback.
     const findNote = () => {
       const notes = composition.audioMapping.dataMapping;
-      for (let i = 0; i < notes.length; i++) {
-        const note = notes[i];
-        if (currentTime >= note.time && currentTime < note.time + note.duration) {
-          if (currentNote?.time !== note.time) {
-            setCurrentNote(note);
+      // Find the last note that started before or at the current time
+      const lastNote = [...notes].reverse().find(note => currentTime >= note.time);
+      
+      if (lastNote) {
+        // Check if the current time is within the duration of that note
+        if (currentTime < lastNote.time + lastNote.duration) {
+          if (currentNote?.time !== lastNote.time) {
+            setCurrentNote(lastNote);
           }
           return;
         }
@@ -37,22 +41,22 @@ export function DataInspector({ currentTime, composition }: DataInspectorProps) 
   }, [currentTime, composition, currentNote]);
 
   return (
-    <Card className={`h-full`}>
+    <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-bold text-muted-foreground">Data Inspector</CardTitle>
-        <Info className="h-4 w-4 text-primary" />
+        <CardTitle className="text-base font-semibold">Data Inspector</CardTitle>
+        <Info className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-2">
         {currentNote ? (
           <div className="text-sm space-y-1 text-foreground">
-            <p><span className="font-semibold text-muted-foreground">Time:</span> {currentNote.time.toFixed(2)}s</p>
-            <p><span className="font-semibold text-muted-foreground">Pitch:</span> {currentNote.note}</p>
-            <p><span className="font-semibold text-muted-foreground">Duration:</span> {currentNote.duration.toFixed(2)}s</p>
-            <p><span className="font-semibold text-muted-foreground">Source:</span> {currentNote.dataPoint}</p>
+            <p><span className="font-medium text-muted-foreground w-16 inline-block">Time:</span> {currentNote.time.toFixed(2)}s</p>
+            <p><span className="font-medium text-muted-foreground w-16 inline-block">Pitch:</span> {currentNote.note}</p>
+            <p><span className="font-medium text-muted-foreground w-16 inline-block">Duration:</span> {currentNote.duration.toFixed(2)}s</p>
+            <p><span className="font-medium text-muted-foreground w-16 inline-block">Source:</span> {currentNote.dataPoint}</p>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            {composition ? 'Play or scrub the waveform to inspect data points.' : 'No data to inspect.'}
+          <p className="text-sm text-muted-foreground pt-2">
+            {composition ? 'Scrub the waveform to inspect data points.' : 'No data to inspect.'}
           </p>
         )}
       </CardContent>

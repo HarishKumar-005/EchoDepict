@@ -41,73 +41,93 @@ export function AudioVisualizer({
   
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
+  const particlesRef = useRef<any[]>([]);
   
   const draw = useCallback((fftValues: Float32Array, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) => {
     const { width, height } = canvas;
     context.clearRect(0, 0, width, height);
 
-    const barWidth = (width / fftValues.length) * 1.5;
-    let x = 0;
-
+    // Style colors from CSS
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     const primaryColor = `hsl(${primaryHsl})`;
+    const mutedFgHsl = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim();
+    const mutedFgColor = `hsl(${mutedFgHsl})`;
+    const isDarkMode = document.documentElement.classList.contains('dark');
 
-    // "Aurora" effect
-    const data = fftValues.map(v => (v + 140) / 140); // Normalize
+    const numBars = fftValues.length;
+    const barWidth = width / numBars;
+    const centerY = height / 2;
 
-    // Base Wave (Lows)
-    context.fillStyle = 'rgba(75, 0, 130, 0.2)'; // Indigo
+    // Draw center line
+    context.strokeStyle = isDarkMode ? `hsl(${primaryHsl} / 0.2)`: `hsl(${primaryHsl} / 0.4)`;
+    context.lineWidth = 1;
     context.beginPath();
-    context.moveTo(0, height);
-    for (let i = 0; i < data.length; i++) {
-        const lowFreq = data.slice(0, data.length / 4);
-        const avg = lowFreq.reduce((a, b) => a + b, 0) / lowFreq.length;
-        const y = height - (avg * height * 0.3) - Math.sin(i * 0.1 + Date.now() * 0.001) * 10;
-        context.lineTo(i * (width / data.length), y);
-    }
-    context.lineTo(width, height);
-    context.closePath();
-    context.fill();
+    context.moveTo(0, centerY);
+    context.lineTo(width, centerY);
+    context.stroke();
 
-    // Mid-Range Waves
-    const waveGradient = context.createLinearGradient(0, height * 0.4, 0, height);
-    waveGradient.addColorStop(0, `hsla(${primaryHsl}, 0.5)`); // Cyan
-    waveGradient.addColorStop(1, 'rgba(255, 0, 255, 0.3)'); // Magenta
+    const particles = particlesRef.current;
     
-    context.fillStyle = waveGradient;
-    context.beginPath();
-    context.moveTo(0, height);
-     for (let i = 0; i < data.length; i++) {
-        const midFreq = data.slice(data.length / 4, data.length / 2);
-        const avg = midFreq.reduce((a, b) => a + b, 0) / midFreq.length;
-        const y = height - (data[i] * height * 0.5) - (avg * height * 0.2) + Math.sin(i * 0.2 + Date.now() * 0.002) * 5;
-        context.lineTo(i * (width / data.length), y);
-    }
-    context.lineTo(width, height);
-    context.closePath();
-    context.fill();
+    // Draw frequency bars and update particles
+    for (let i = 0; i < numBars; i++) {
+        const value = (fftValues[i] + 140) / 140; // Normalize dB range
+        const barHeight = Math.max(0, value * centerY * 1.2);
+        
+        const x = i * barWidth;
+        
+        // Gradient for bars
+        const gradient = context.createLinearGradient(x, centerY, x, centerY - barHeight);
+        gradient.addColorStop(0, isDarkMode ? 'hsl(222.2 84% 4.9% / 0)' : 'hsl(210 40% 98% / 0)');
+        gradient.addColorStop(1, primaryColor);
 
+        context.fillStyle = gradient;
 
-    // Sparkle Particles (Highs)
-    context.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    const highFreqData = data.slice(data.length / 2);
-    highFreqData.forEach((val, i) => {
-        if (val > 0.8) { // If high frequency is loud
-            const x = Math.random() * width;
-            const y = (1 - (i / highFreqData.length)) * height * 0.8;
-            const size = Math.random() * 2;
-            context.fillRect(x, y, size, size);
+        // Draw upper bar (treble)
+        context.fillRect(x, centerY - barHeight, barWidth, barHeight);
+        
+        // Draw lower bar (bass) - mirrored
+        context.fillRect(x, centerY, barWidth, barHeight);
+        
+        // Particle emission
+        if (barHeight > centerY * 0.7 && Math.random() > 0.95) {
+            particles.push({
+                x: x + barWidth / 2,
+                y: centerY - barHeight,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: -Math.random() * 1,
+                radius: Math.random() * 1.5 + 0.5,
+                alpha: 1
+            });
         }
-    });
+    }
+
+    // Update and draw particles
+    context.fillStyle = primaryColor;
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.02;
+        
+        if (p.alpha <= 0) {
+            particles.splice(i, 1);
+        } else {
+            context.globalAlpha = p.alpha;
+            context.beginPath();
+            context.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            context.fill();
+        }
+    }
+    context.globalAlpha = 1;
 
   }, []);
   
   const scheduleStop = useCallback(() => {
     if (duration > 0) {
       Tone.Transport.scheduleOnce(() => {
-        Tone.Transport.stop();
         setIsPlaying(false);
         onEnded();
+        Tone.Transport.stop(); // Explicitly stop transport
       }, duration);
     }
   }, [duration, setIsPlaying, onEnded]);
@@ -116,15 +136,21 @@ export function AudioVisualizer({
   useEffect(() => {
     if (!composition?.audioMapping) return;
 
+    // Cleanup previous instances
     partRef.current?.dispose();
     synthRef.current?.dispose();
+    fftRef.current?.dispose();
+    Tone.Transport.cancel(); // Clear all scheduled events
 
     synthRef.current = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'amsine' },
       envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
     }).toDestination();
     
-    fftRef.current = new Tone.FFT(FFT_SIZE);
+    fftRef.current = new Tone.FFT({
+        size: FFT_SIZE,
+        smoothing: 0.8
+    });
     Tone.getDestination().connect(fftRef.current);
     
     partRef.current = new Tone.Part((time, value) => {
@@ -150,9 +176,7 @@ export function AudioVisualizer({
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = undefined;
       }
-      if (Tone.Transport.state !== 'started') {
-        setCurrentTime(0); // Reset time only if transport is fully stopped
-      }
+      // Don't reset time here, allow onEnded to handle it
       return;
     }
     
@@ -196,14 +220,16 @@ export function AudioVisualizer({
       Tone.Transport.pause();
       setIsPlaying(false);
     } else {
-      if (Tone.Transport.seconds >= duration) {
+      // If playback finished, reset time before starting
+      if (currentTime >= duration) {
+        setCurrentTime(0);
         Tone.Transport.seconds = 0;
       }
       scheduleStop();
       Tone.Transport.start();
       setIsPlaying(true);
     }
-  }, [composition, setIsPlaying, scheduleStop, duration]);
+  }, [composition, setIsPlaying, scheduleStop, duration, currentTime, setCurrentTime]);
 
   const handleScrubberChange = useCallback((value: number[]) => {
       if (!composition || duration <= 0) return;
@@ -237,7 +263,7 @@ export function AudioVisualizer({
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
         )}
       </CardContent>
-      <CardFooter className="flex flex-col gap-3 pt-4 border-t border-border/50 bg-background/50">
+      <CardFooter className="flex flex-col gap-3 pt-4 border-t">
         <div className="w-full flex items-center gap-4 px-2">
           <span className="text-xs text-muted-foreground tabular-nums">{formatTime(currentTime)}</span>
           <Slider
@@ -260,7 +286,7 @@ export function AudioVisualizer({
               disabled={!composition || isLoading}
             />
           </div>
-          <Button size="lg" onClick={handlePlayPause} disabled={!composition || isLoading} className="w-32 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg shadow-[0_0_15px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.7)] transition-shadow rounded-full">
+          <Button size="lg" onClick={handlePlayPause} disabled={!composition || isLoading} className="w-32 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full">
             {isPlaying ? <Pause className="mr-2" /> : <Play className="mr-2" />}
             {isPlaying ? 'Pause' : 'Play'}
           </Button>

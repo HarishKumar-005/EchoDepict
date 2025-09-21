@@ -57,13 +57,13 @@ export default function Home() {
     setIsLoading(false);
   };
 
-  const resetState = () => {
+  const handleEnded = () => {
     setIsPlaying(false);
     setCurrentTime(0);
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-transparent text-foreground font-body antialiased">
+    <div className="flex flex-col h-screen bg-background text-foreground font-body antialiased">
       <Header />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 p-4 lg:p-6 overflow-hidden">
         {/* Left Panel */}
@@ -76,7 +76,7 @@ export default function Home() {
           {/* Center Panel */}
           <div className="lg:col-span-2 flex flex-col min-h-0">
             {composition || isLoading ? (
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col min-h-0 gap-4 lg:gap-6">
                 <div className="flex-[3_3_0%] min-h-0">
                    <AudioVisualizer 
                     composition={composition}
@@ -86,17 +86,17 @@ export default function Home() {
                     setCurrentTime={setCurrentTime}
                     duration={duration}
                     isLoading={isLoading}
-                    onEnded={resetState}
+                    onEnded={handleEnded}
                   />
                 </div>
-                <div className="flex-[1_1_0%] mt-4 lg:mt-6">
+                <div className="flex-[1_1_0%]">
                   <DataInspector currentTime={currentTime} composition={composition} />
                 </div>
               </div>
             ) : (
-               <Card className={`h-full min-h-[300px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed`}>
-                  <BrainCircuit className="h-16 w-16 text-primary mb-4" style={{ filter: 'drop-shadow(0 0 5px hsl(var(--primary)/0.5))' }} />
-                  <h3 className="text-2xl font-bold text-primary mb-2" style={{ textShadow: '0 0 8px hsl(var(--primary)/0.3)' }}>Aurora UI</h3>
+               <Card className="h-full min-h-[300px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed">
+                  <BrainCircuit className="h-16 w-16 text-primary mb-4" />
+                  <h3 className="text-2xl font-bold text-primary mb-2">Aura UI</h3>
                   <p className="text-muted-foreground">Your generated audio landscape will appear here. <br/> Start by providing data or a concept.</p>
                </Card>
             )}
@@ -111,7 +111,7 @@ export default function Home() {
                   isLoading={isLoading}
                 />
              ) : (
-                <Card className={`h-full min-h-[200px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed`}>
+                <Card className="h-full min-h-[200px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed">
                   <BotMessageSquare className="h-16 w-16 text-primary mb-4" />
                   <h3 className="text-xl font-bold text-foreground mb-2">AI Narrator</h3>
                   <p className="text-muted-foreground">The AI-generated script will be displayed here, synchronized with the audio.</p>
