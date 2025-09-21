@@ -19,34 +19,7 @@ type AudioVisualizerProps = {
   onEnded: () => void;
 };
 
-// Particle settings
-const PARTICLE_COUNT = 512; // Must be power of 2 for FFT
-const PARTICLE_SIZE = 2;
-
-class Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  baseSize: number;
-  color: string;
-
-  constructor(x: number, y: number, color: string) {
-    this.x = x;
-    this.y = y;
-    this.vx = Math.random() * 0.5 + 0.2;
-    this.vy = 0;
-    this.life = 1;
-    this.baseSize = Math.random() * PARTICLE_SIZE;
-    this.color = color;
-  }
-
-  update() {
-    this.x += this.vx;
-    this.life -= 0.005;
-  }
-}
+const FFT_SIZE = 256;
 
 export function AudioVisualizer({
   composition,
@@ -69,70 +42,36 @@ export function AudioVisualizer({
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
   
-  const particlesRef = useRef<Particle[]>([]);
-
-  // Drawing function for the Neural Particle Spectrogram
   const draw = useCallback((fftValues: Float32Array, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) => {
     const { width, height } = canvas;
-    const particles = particlesRef.current;
+    context.clearRect(0, 0, width, height);
 
-    // Fade out effect
-    context.fillStyle = 'rgba(13, 12, 29, 0.1)'; // Corresponds to dark theme bg
-    context.fillRect(0, 0, width, height);
-    
-    // Draw a faint grid
-    context.strokeStyle = 'rgba(0, 255, 255, 0.05)';
-    context.lineWidth = 0.5;
-    for (let i = 0; i < width; i += 20) {
-      context.beginPath();
-      context.moveTo(i, 0);
-      context.lineTo(i, height);
-      context.stroke();
-    }
-    for (let i = 0; i < height; i += 20) {
-      context.beginPath();
-      context.moveTo(0, i);
-      context.lineTo(width, i);
-      context.stroke();
-    }
+    const barWidth = (width / fftValues.length) * 1.5;
+    let x = 0;
 
-    // Update and draw particles
-    if (isPlaying) {
-      fftValues.forEach((value, i) => {
-        const amp = (value + 140) / 140; // Normalize amplitude
-        if (amp > 0.3) {
-            const freqPercent = i / fftValues.length;
-            const y = height - (freqPercent * height);
-            
-            // Color based on frequency
-            const hue = 200 + (freqPercent * 120); // Blue -> Magenta -> Cyan range
-            const color = `hsl(${hue}, 100%, ${60 + amp * 30}%)`;
+    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const primaryColor = `hsl(${primaryHsl})`;
 
-            particles.push(new Particle(0, y, color));
-        }
-      });
-    }
+    fftValues.forEach((value, i) => {
+        const percent = (value + 140) / 140; // values are in dB, -140 to 0
+        const barHeight = height * Math.max(0, percent);
 
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.update();
-      if (p.life <= 0 || p.x > width) {
-        particles.splice(i, 1);
-      } else {
-        context.beginPath();
-        context.fillStyle = p.color;
-        context.globalAlpha = p.life;
-        context.arc(p.x, p.y, p.baseSize, 0, Math.PI * 2);
-        context.fill();
-      }
-    }
-    context.globalAlpha = 1;
-  }, [isPlaying]);
+        const gradient = context.createLinearGradient(0, height, 0, height - barHeight);
+        gradient.addColorStop(0, 'purple');
+        gradient.addColorStop(1, primaryColor);
+
+        context.fillStyle = gradient;
+        context.fillRect(x, height - barHeight, barWidth, barHeight);
+        
+        x += barWidth + 1;
+    });
+  }, []);
   
   const scheduleStop = useCallback(() => {
     Tone.Transport.scheduleOnce(() => {
-        setIsPlaying(false);
-        onEnded();
+      Tone.Transport.stop();
+      setIsPlaying(false);
+      onEnded();
     }, duration);
   }, [duration, setIsPlaying, onEnded]);
 
@@ -148,7 +87,7 @@ export function AudioVisualizer({
       envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
     }).toDestination();
     
-    fftRef.current = new Tone.FFT(PARTICLE_COUNT);
+    fftRef.current = new Tone.FFT(FFT_SIZE);
     Tone.getDestination().connect(fftRef.current);
     
     partRef.current = new Tone.Part((time, value) => {
@@ -169,6 +108,14 @@ export function AudioVisualizer({
 
   // Animation loop
   useEffect(() => {
+    if (!isPlaying) {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      setCurrentTime(0); // Reset time when not playing
+      return;
+    }
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
     const context = canvas.getContext('2d');
@@ -182,8 +129,6 @@ export function AudioVisualizer({
       if (fftRef.current) {
         const fftValues = fftRef.current.getValue();
         draw(fftValues as Float32Array, canvas, context);
-      } else {
-        draw(new Float32Array(PARTICLE_COUNT), canvas, context);
       }
 
       animationFrameId.current = requestAnimationFrame(loop);
@@ -194,7 +139,7 @@ export function AudioVisualizer({
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
     };
-  }, [draw, setCurrentTime]);
+  }, [isPlaying, draw, setCurrentTime]);
 
   const handlePlayPause = useCallback(async () => {
     if (!composition) return;
