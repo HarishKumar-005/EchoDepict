@@ -62,7 +62,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-sans antialiased">
+    <div className="flex flex-col h-screen bg-background text-foreground antialiased">
       <Header />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 p-4 lg:p-6 overflow-hidden">
         {/* Left Panel */}

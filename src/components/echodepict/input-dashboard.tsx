@@ -103,7 +103,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
               placeholder="Describe a complex process or story for the agents to interpret, e.g., 'the complete lifecycle of a star from nebula to black hole'"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              className="h-full resize-none"
+              className="h-full resize-none text-sm lg:text-base"
               disabled={isLoading}
             />
           </TabsContent>
@@ -119,8 +119,8 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
             >
               {file ? (
                 <div className="flex flex-col items-center gap-2">
-                    <FileText className="w-12 h-12 text-primary" />
-                    <p className="font-semibold">{file.name}</p>
+                    <FileText className="w-10 h-10 lg:w-12 lg:h-12 text-primary" />
+                    <p className="font-semibold text-sm lg:text-base">{file.name}</p>
                     <p className="text-xs text-muted-foreground">{Math.round(file.size / 1024)} KB</p>
                     <Button variant="link" size="sm" onClick={() => {setFile(null); setFileContent(null);}} disabled={isLoading}>
                       Remove file
@@ -128,9 +128,9 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
                 </div>
               ) : (
                 <>
-                  <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
-                  <p className="font-semibold">Drag & drop a CSV file</p>
-                  <p className="text-muted-foreground text-sm">or</p>
+                  <UploadCloud className="w-10 h-10 lg:w-12 lg:h-12 text-muted-foreground mb-2" />
+                  <p className="font-semibold text-sm lg:text-base">Drag & drop a CSV file</p>
+                  <p className="text-muted-foreground text-xs lg:text-sm">or</p>
                   <Button variant="outline" size="sm" asChild className="mt-2">
                     <label htmlFor="file-upload" className="cursor-pointer">
                       Browse Files
@@ -143,7 +143,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
           </TabsContent>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitDisabled} className="w-full text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md">
+          <Button onClick={handleSubmit} disabled={isSubmitDisabled} className="w-full text-base lg:text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md h-11 lg:h-12">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
