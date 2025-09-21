@@ -38,7 +38,8 @@ EchoDepict's core intelligence is powered by a Genkit-orchestrated workflow invo
 -   **UI Components**: shadcn/ui
 -   **AI Orchestration**: Firebase Genkit
 -   **AI Model**: Google Gemini
--   **Deployment**: Firebase App Hosting
+-   **Deployment**: Vercel
+-   **Monitoring**: Vercel Analytics & Speed Insights
 
 ## ⚙️ Setup and Installation
 To run EchoDepict locally, follow these steps:
@@ -72,3 +73,8 @@ To run EchoDepict locally, follow these steps:
     ```bash
     npm run genkit:dev
     ```
+
+## 🚀 Future Work
+- Caching AI results to reduce API calls for identical inputs.
+- Expanding the `Composer` agent's capabilities with a wider range of instruments and musical scales.
+- Introducing real-time collaboration features.
