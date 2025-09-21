@@ -77,8 +77,8 @@ export function AudioVisualizer({
     const { width, height } = canvas;
     context.clearRect(0, 0, width, height);
 
-    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-    const primaryColor = `hsl(${primaryHsl})`;
+    const primaryHslRaw = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const primaryHsl = primaryHslRaw.split(' ').join(','); // Add commas for correct format
 
     const now = performance.now();
     if (lastBreathTime.current === 0) lastBreathTime.current = now;
