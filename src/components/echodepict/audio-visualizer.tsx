@@ -148,11 +148,13 @@ export function AudioVisualizer({
   
   const scheduleStop = useCallback(() => {
     if (duration > 0) {
-      Tone.Transport.scheduleOnce(() => {
-        setIsPlaying(false);
-        onEnded();
-        Tone.Transport.stop(); // Explicitly stop transport
-      }, duration);
+        Tone.Transport.scheduleOnce((time) => {
+            Tone.Draw.schedule(() => {
+                setIsPlaying(false);
+                onEnded();
+                Tone.Transport.stop();
+            }, time);
+        }, duration);
     }
   }, [duration, setIsPlaying, onEnded]);
 
@@ -252,6 +254,9 @@ export function AudioVisualizer({
         // Set a default "idle" state for the visualizer
         context.clearRect(0, 0, canvas.width, canvas.height);
         draw(new Float32Array(FFT_SIZE).fill(-140), canvas, context);
+        if (currentTime !== 0) {
+          setCurrentTime(0);
+        }
     }
 
     return () => {
