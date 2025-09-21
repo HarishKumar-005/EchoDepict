@@ -95,7 +95,7 @@ export default function Home() {
             ) : (
                <Card className="h-full min-h-[300px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed">
                   <BrainCircuit className="h-12 w-12 lg:h-16 lg:w-16 text-primary mb-4" />
-                  <h3 className="text-xl lg:text-2xl font-bold text-primary mb-2">Aura UI</h3>
+                  <h3 className="text-xl lg:text-2xl font-bold text-primary mb-2">Audio Landscape</h3>
                   <p className="text-sm lg:text-base text-muted-foreground">Your generated audio landscape will appear here. <br/> Start by providing data or a concept.</p>
                </Card>
             )}
