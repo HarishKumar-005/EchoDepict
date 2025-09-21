@@ -169,13 +169,17 @@ export function AudioVisualizer({
     synthRef.current = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'amsine' },
       envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 },
-    }).toDestination();
+    });
     
     fftRef.current = new Tone.FFT({
         size: FFT_SIZE,
         smoothing: 0.8
     });
-    Tone.getDestination().connect(fftRef.current);
+    
+    if(synthRef.current && fftRef.current){
+        synthRef.current.connect(fftRef.current);
+        fftRef.current.toDestination();
+    }
     
     partRef.current = new Tone.Part((time, value) => {
       synthRef.current?.triggerAttackRelease(value.note, value.duration, time, value.velocity);
