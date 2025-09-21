@@ -21,6 +21,14 @@ type AudioVisualizerProps = {
 
 const FFT_SIZE = 256;
 
+// Neuronal Web specific settings
+const NODE_COUNT = 64; // Number of nodes, corresponds to FFT bins
+const MIN_NODE_RADIUS = 1;
+const MAX_NODE_RADIUS = 4;
+const CONNECTION_DISTANCE = 100; // Max distance to draw a connection
+const BREATHING_SPEED = 0.5; // Radians per second
+const BREATHING_AMOUNT = 0.02; // How much it scales
+
 export function AudioVisualizer({
   composition,
   isPlaying,
@@ -38,87 +46,104 @@ export function AudioVisualizer({
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameId = useRef<number>();
-  
+
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
-  const particlesRef = useRef<any[]>([]);
-  
+
+  // Refs for Neuronal Web visualizer
+  const nodesRef = useRef<any[]>([]);
+  const lastBreathTime = useRef(0);
+  const breathAngle = useRef(0);
+
+  // Initialize nodes for the neuronal web
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && nodesRef.current.length === 0) {
+        const tempNodes = [];
+        for (let i = 0; i < NODE_COUNT; i++) {
+            tempNodes.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: MIN_NODE_RADIUS,
+                targetGlow: 0,
+                currentGlow: 0,
+            });
+        }
+        nodesRef.current = tempNodes;
+    }
+  }, []); // Run only once
+
   const draw = useCallback((fftValues: Float32Array, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) => {
     const { width, height } = canvas;
     context.clearRect(0, 0, width, height);
 
-    // Style colors from CSS
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     const primaryColor = `hsl(${primaryHsl})`;
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const bgColor = getComputedStyle(document.documentElement).getPropertyValue(isDarkMode ? '--background' : '--card').trim();
 
-    const numBars = fftValues.length;
-    const barWidth = width / numBars;
-    const centerY = height / 2;
-
-    // Draw center line
-    context.strokeStyle = isDarkMode ? `hsl(${primaryHsl} / 0.2)`: `hsl(${primaryHsl} / 0.4)`;
-    context.lineWidth = 1;
-    context.beginPath();
-    context.moveTo(0, centerY);
-    context.lineTo(width, centerY);
-    context.stroke();
-
-    const particles = particlesRef.current;
+    const now = performance.now();
+    if (lastBreathTime.current === 0) lastBreathTime.current = now;
+    const deltaTime = (now - lastBreathTime.current) / 1000;
+    lastBreathTime.current = now;
     
-    // Draw frequency bars and update particles
-    for (let i = 0; i < numBars; i++) {
-        const value = (fftValues[i] + 140) / 140; // Normalize dB range
-        const barHeight = Math.max(0, value * centerY * 1.2);
-        
-        const x = i * barWidth;
-        
-        // Gradient for bars
-        const gradient = context.createLinearGradient(x, centerY, x, centerY - barHeight);
-        gradient.addColorStop(0, `hsla(${bgColor}, 0)`);
-        gradient.addColorStop(1, primaryColor);
+    breathAngle.current += BREATHING_SPEED * deltaTime;
+    const breathScale = 1 + Math.sin(breathAngle.current) * BREATHING_AMOUNT;
 
-        context.fillStyle = gradient;
+    context.save();
+    context.translate(width / 2, height / 2);
+    context.scale(breathScale, breathScale);
+    context.translate(-width / 2, -height / 2);
 
-        // Draw upper bar (treble)
-        context.fillRect(x, centerY - barHeight, barWidth, barHeight);
-        
-        // Draw lower bar (bass) - mirrored
-        context.fillRect(x, centerY, barWidth, barHeight);
-        
-        // Particle emission
-        if (barHeight > centerY * 0.7 && Math.random() > 0.95) {
-            particles.push({
-                x: x + barWidth / 2,
-                y: centerY - barHeight,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: -Math.random() * 1,
-                radius: Math.random() * 1.5 + 0.5,
-                alpha: 1
-            });
+    const nodes = nodesRef.current;
+
+    // Update node glow based on FFT
+    for (let i = 0; i < NODE_COUNT; i++) {
+        const fftIndex = Math.floor(i * (fftValues.length / NODE_COUNT));
+        const value = (fftValues[fftIndex] + 140) / 100; // Normalize
+        nodes[i].targetGlow = Math.max(0, Math.min(1, value));
+        nodes[i].currentGlow += (nodes[i].targetGlow - nodes[i].currentGlow) * 0.2; // Smoothing
+    }
+
+    // Draw connections
+    for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            const dx = nodes[i].x - nodes[j].x;
+            const dy = nodes[i].y - nodes[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < CONNECTION_DISTANCE) {
+                const combinedGlow = (nodes[i].currentGlow + nodes[j].currentGlow) / 2;
+                context.beginPath();
+                context.moveTo(nodes[i].x, nodes[i].y);
+                context.lineTo(nodes[j].x, nodes[j].y);
+                context.strokeStyle = `hsla(${primaryHsl}, ${Math.max(0.05, combinedGlow * 0.5)})`;
+                context.lineWidth = 0.5 + combinedGlow;
+                context.stroke();
+            }
         }
     }
 
-    // Update and draw particles
-    context.fillStyle = primaryColor;
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= 0.02;
-        
-        if (p.alpha <= 0) {
-            particles.splice(i, 1);
-        } else {
-            context.globalAlpha = p.alpha;
+    // Draw nodes
+    nodes.forEach(node => {
+        // Draw main node
+        context.beginPath();
+        context.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        context.fillStyle = `hsla(${primaryHsl}, ${0.5 + node.currentGlow * 0.5})`;
+        context.fill();
+
+        // Draw glow
+        if (node.currentGlow > 0.1) {
+            const glowRadius = node.radius + node.currentGlow * 15;
+            const grad = context.createRadialGradient(node.x, node.y, node.radius, node.x, node.y, glowRadius);
+            grad.addColorStop(0, `hsla(${primaryHsl}, ${node.currentGlow * 0.8})`);
+            grad.addColorStop(1, `hsla(${primaryHsl}, 0)`);
+            context.fillStyle = grad;
             context.beginPath();
-            context.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            context.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
             context.fill();
         }
-    }
-    context.globalAlpha = 1;
+    });
 
+    context.restore();
   }, []);
   
   const scheduleStop = useCallback(() => {
@@ -174,6 +199,29 @@ export function AudioVisualizer({
     if (!canvas) return;
     const context = canvas.getContext('2d');
     if (!context) return;
+    
+    // Resize canvas to fit container
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const { width, height } = entry.contentRect;
+            canvas.width = width;
+            canvas.height = height;
+            // Re-initialize nodes on resize
+            const tempNodes = [];
+            for (let i = 0; i < NODE_COUNT; i++) {
+                tempNodes.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: MIN_NODE_RADIUS,
+                    targetGlow: 0,
+                    currentGlow: 0,
+                });
+            }
+            nodesRef.current = tempNodes;
+        }
+    });
+    resizeObserver.observe(canvas);
+
 
     let loop: () => void;
 
@@ -197,14 +245,14 @@ export function AudioVisualizer({
             cancelAnimationFrame(animationFrameId.current);
             animationFrameId.current = undefined;
         }
-        if (currentTime === 0 && canvas) {
-            // Clear canvas when not playing and at the start
-            context.clearRect(0, 0, canvas.width, canvas.height);
-        }
+        // Set a default "idle" state for the visualizer
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        draw(new Float32Array(FFT_SIZE).fill(-140), canvas, context);
     }
 
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+      resizeObserver.disconnect();
     };
   }, [isPlaying, draw, setCurrentTime, currentTime]);
 
