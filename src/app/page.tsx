@@ -9,7 +9,7 @@ import { AudioVisualizer } from '@/components/echodepict/audio-visualizer';
 import { DataInspector } from '@/components/echodepict/data-inspector';
 import { NarrationPanel } from '@/components/echodepict/narration-panel';
 import { runCompositionAgents } from './actions';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { BotMessageSquare, BrainCircuit } from 'lucide-react';
 
 export default function Home() {
@@ -62,19 +62,17 @@ export default function Home() {
     setCurrentTime(0);
   }
 
-  const PanelGradient = "bg-transparent";
-
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-body antialiased">
+    <div className="flex flex-col min-h-screen bg-transparent text-foreground font-body antialiased">
       <Header />
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 overflow-hidden">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 p-4 lg:p-6 overflow-hidden">
         {/* Left Panel */}
         <div className="lg:col-span-3 flex flex-col h-full min-h-0">
           <InputDashboard onCompose={handleCompose} isLoading={isLoading} />
         </div>
         
         {/* Center & Right Panels */}
-        <div className="lg:col-span-9 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+        <div className="lg:col-span-9 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-0">
           {/* Center Panel */}
           <div className="lg:col-span-2 flex flex-col h-full min-h-0">
             {composition || isLoading ? (
@@ -92,9 +90,9 @@ export default function Home() {
                 <DataInspector currentTime={currentTime} composition={composition} />
               </>
             ) : (
-               <Card className={`h-full flex flex-col items-center justify-center text-center p-8 border-dashed border-white/20`}>
-                  <BrainCircuit className="h-16 w-16 text-[hsl(var(--luminous-primary))] mb-4" style={{ filter: 'drop-shadow(0 0 5px hsl(var(--luminous-primary)/0.5))' }} />
-                  <h3 className="text-2xl font-semibold text-[hsl(var(--luminous-primary))] mb-2" style={{ textShadow: '0 0 8px hsl(var(--luminous-primary)/0.3)' }}>Auralis Studio</h3>
+               <Card className={`h-full min-h-[300px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed`}>
+                  <BrainCircuit className="h-16 w-16 text-primary mb-4" style={{ filter: 'drop-shadow(0 0 5px hsl(var(--primary)/0.5))' }} />
+                  <h3 className="text-2xl font-semibold text-primary mb-2" style={{ textShadow: '0 0 8px hsl(var(--primary)/0.3)' }}>Aetherium Studio</h3>
                   <p className="text-muted-foreground">Your generated audio landscape will appear here. <br/> Start by providing data or a concept.</p>
                </Card>
             )}
@@ -109,8 +107,8 @@ export default function Home() {
                   isLoading={isLoading}
                 />
              ) : (
-                <Card className={`h-full flex flex-col items-center justify-center text-center p-8 border-dashed border-white/20`}>
-                  <BotMessageSquare className="h-16 w-16 text-[hsl(var(--luminous-primary))] mb-4" />
+                <Card className={`h-full min-h-[200px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed`}>
+                  <BotMessageSquare className="h-16 w-16 text-primary mb-4" />
                   <h3 className="text-xl font-semibold text-foreground mb-2">AI Narrator</h3>
                   <p className="text-muted-foreground">The AI-generated script will be displayed here, synchronized with the audio.</p>
                 </Card>

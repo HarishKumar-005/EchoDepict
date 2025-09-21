@@ -54,7 +54,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
       handleFile(e.dataTransfer.files[0]);
       e.dataTransfer.clearData();
     }
-  }, []);
+  }, [handleFile, toast]);
 
   const onDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -89,7 +89,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
   
 
   return (
-    <Card className={`h-full flex flex-col`}>
+    <Card className="h-full flex flex-col">
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'text' | 'csv')} className="flex flex-col flex-1">
         <CardHeader>
           <TabsList className="grid w-full grid-cols-2 bg-transparent border-b-0 p-0">
@@ -103,7 +103,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
               placeholder="Describe a complex process or story for the agents to interpret, e.g., 'the complete lifecycle of a star from nebula to black hole'"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              className="h-full resize-none bg-black/20 border-white/10 focus-visible:ring-primary/50"
+              className="h-full resize-none bg-transparent border-white/10 focus-visible:ring-primary/50"
               disabled={isLoading}
             />
           </TabsContent>
@@ -114,7 +114,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
               onDragLeave={onDragLeave}
               className={cn(
                 'h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center p-4 transition-colors',
-                isDragging ? 'border-primary bg-primary/10' : 'border-white/10'
+                isDragging ? 'border-primary bg-primary/10' : 'border-border'
               )}
             >
               {file ? (
@@ -131,7 +131,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
                   <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
                   <p className="font-semibold">Drag & drop a CSV file</p>
                   <p className="text-muted-foreground text-sm">or</p>
-                  <Button variant="outline" size="sm" asChild className="mt-2 bg-transparent border-white/20 hover:bg-primary/10 hover:text-primary-foreground">
+                  <Button variant="outline" size="sm" asChild className="mt-2 bg-transparent border-border hover:bg-primary/10 hover:text-primary">
                     <label htmlFor="file-upload" className="cursor-pointer">
                       Browse Files
                     </label>
@@ -143,7 +143,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
           </TabsContent>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitDisabled} className="w-full text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:opacity-90 transition-opacity" style={{ boxShadow: '0 0 20px hsl(var(--glow-primary))' }}>
+          <Button onClick={handleSubmit} disabled={isSubmitDisabled} className="w-full text-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity rounded-full" style={{ boxShadow: '0 0 20px hsl(var(--glow-primary))' }}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
