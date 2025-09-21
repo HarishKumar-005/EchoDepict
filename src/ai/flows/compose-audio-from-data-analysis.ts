@@ -61,7 +61,7 @@ const composeAudioFromDataAnalysisFlow = ai.defineFlow(
     
     try {
       const { output } = await ai.generate({
-        model: ai.model,
+        model: 'googleai/gemini-2.5-flash',
         ...prompt,
         config: generationConfig,
         output: {
