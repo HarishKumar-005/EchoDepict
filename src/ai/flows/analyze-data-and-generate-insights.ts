@@ -36,17 +36,11 @@ export async function analyzeDataAndGenerateInsights(
   return analyzeDataAndGenerateInsightsFlow(input);
 }
 
-const analyzeDataAndGenerateInsightsPrompt = ai.definePrompt({
-  name: 'analyzeDataAndGenerateInsightsPrompt',
-  input: {schema: AnalyzeDataAndGenerateInsightsInputSchema},
-  output: {
-    schema: AnalyzeDataAndGenerateInsightsOutputSchema,
-    format: 'json',
-  },
-  prompt: `You are a data analysis expert. Analyze the following {{inputType}} data and generate insights, identifying trends, patterns, and sentiment.
+const promptTemplate = `You are a data analysis expert. Analyze the following {{inputType}} data and generate insights, identifying trends, patterns, and sentiment.
 
-Data: {{{inputData}}}`,
-});
+Data: {{{inputData}}}
+
+CRITICAL: Your response must be a single, valid JSON object and nothing else. Do not include any explanatory text before or after the JSON.`;
 
 const analyzeDataAndGenerateInsightsFlow = ai.defineFlow(
   {
@@ -55,7 +49,33 @@ const analyzeDataAndGenerateInsightsFlow = ai.defineFlow(
     outputSchema: AnalyzeDataAndGenerateInsightsOutputSchema,
   },
   async input => {
-    const {output} = await analyzeDataAndGenerateInsightsPrompt(input);
-    return output!;
+    
+    const prompt = {
+      prompt: promptTemplate,
+      input,
+    }
+    
+    const generationConfig = {
+      responseMimeType: 'application/json',
+    };
+    
+    console.log("ANALYZER - PROMPT:", prompt.prompt);
+    console.log("ANALYZER - CONFIG:", generationConfig);
+
+    try {
+      const { output } = await ai.generate({
+        model: ai.model,
+        ...prompt,
+        config: generationConfig,
+        output: {
+          schema: AnalyzeDataAndGenerateInsightsOutputSchema,
+        },
+      });
+      return output!;
+    } catch (error) {
+      console.error("ERROR in Analyzer Agent:", error);
+      // Re-throw the error to be caught by the main action handler
+      throw new Error(`Analyzer Agent failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 );

@@ -59,21 +59,31 @@ function parseDataMapping(
 export async function runCompositionAgents(input: Input): Promise<{ success: true; data: Composition } | { success: false; error: string }> {
   try {
     const validatedInput = InputSchema.parse(input);
+    
+    console.log('--- STARTING AGENT WORKFLOW ---');
 
+    // 1. Analyzer Agent
+    console.log('1. ANALYZER AGENT - INPUT:', validatedInput);
     const analysisResult = await analyzeDataAndGenerateInsights({
       inputType: validatedInput.type,
       inputData: validatedInput.data,
     });
     const analysisJsonString = JSON.stringify(analysisResult.analysis);
+    console.log('1. ANALYZER AGENT - OUTPUT:', analysisJsonString);
 
+    // 2. Composer Agent
+    console.log('2. COMPOSER AGENT - INPUT:', { analysis: analysisJsonString });
     const composerResult = await composeAudioFromDataAnalysis({
       analysis: analysisJsonString,
     });
+    console.log('2. COMPOSER AGENT - OUTPUT:', composerResult);
 
     const { notes, duration } = parseDataMapping(composerResult.audioMapping.dataMapping, validatedInput.type, validatedInput.data);
     
     if (notes.length === 0) {
-      return { success: false, error: "The Composer AI failed to generate a valid musical structure. Please try a different input." };
+      const errorMsg = "The Composer AI failed to generate a valid musical structure. Please try a different input.";
+      console.error(errorMsg);
+      return { success: false, error: errorMsg };
     }
 
     const audioMapping = {
@@ -81,20 +91,29 @@ export async function runCompositionAgents(input: Input): Promise<{ success: tru
         dataMapping: notes,
         duration,
     };
-
-    const narratorResult = await generateTimedNarrative({
+    
+    const narratorInput = {
       analysis: analysisJsonString,
-      audioMapping: JSON.stringify(composerResult.audioMapping),
-    });
+      audioMapping: JSON.stringify(composerResult.audioMapping), // Send original mapping
+    };
+
+    // 3. Narrator Agent
+    console.log('3. NARRATOR AGENT - INPUT:', narratorInput);
+    const narratorResult = await generateTimedNarrative(narratorInput);
+    console.log('3. NARRATOR AGENT - OUTPUT:', narratorResult);
+
 
     const composition: Composition = {
       audioMapping,
       narrationScript: narratorResult,
     };
+    
+    console.log('--- AGENT WORKFLOW COMPLETE ---');
+    console.log('FINAL COMPOSITION OBJECT:', composition);
 
     return { success: true, data: composition };
   } catch (e) {
-    console.error("Agent workflow error:", e);
+    console.error("AGENT WORKFLOW FAILED:", e);
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during AI composition.';
     return { success: false, error: errorMessage };
   }

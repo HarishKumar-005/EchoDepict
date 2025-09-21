@@ -37,16 +37,7 @@ export async function generateTimedNarrative(
   return generateTimedNarrativeFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateTimedNarrativePrompt',
-  input: {
-    schema: GenerateTimedNarrativeInputSchema,
-  },
-  output: {
-    schema: GenerateTimedNarrativeOutputSchema,
-    format: 'json',
-  },
-  prompt: `You are an AI narrator, creating a compelling, human-readable story of the data, in sync with the generated audio.
+const promptTemplate = `You are an AI narrator, creating a compelling, human-readable story of the data, in sync with the generated audio.
 
   You will receive the analysis of the data, and the audio mapping that translates data points into musical elements.
 
@@ -62,8 +53,9 @@ const prompt = ai.definePrompt({
     { "timestamp": 0.5, "text": "The data begins its ascent..." },
     { "timestamp": 2.1, "text": "Notice the anomaly here." }
   ]
-  `,
-});
+
+  CRITICAL: Your response must be a single, valid JSON object (an array) and nothing else. Do not include any explanatory text before or after the JSON.
+  `;
 
 const generateTimedNarrativeFlow = ai.defineFlow(
   {
@@ -72,7 +64,31 @@ const generateTimedNarrativeFlow = ai.defineFlow(
     outputSchema: GenerateTimedNarrativeOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const prompt = {
+      prompt: promptTemplate,
+      input,
+    }
+    
+    const generationConfig = {
+      responseMimeType: 'application/json',
+    };
+
+    console.log("NARRATOR - PROMPT:", prompt.prompt);
+    console.log("NARRATOR - CONFIG:", generationConfig);
+
+    try {
+      const { output } = await ai.generate({
+        model: ai.model,
+        ...prompt,
+        config: generationConfig,
+        output: {
+          schema: GenerateTimedNarrativeOutputSchema,
+        },
+      });
+      return output!;
+    } catch (error) {
+      console.error("ERROR in Narrator Agent:", error);
+      throw new Error(`Narrator Agent failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 );

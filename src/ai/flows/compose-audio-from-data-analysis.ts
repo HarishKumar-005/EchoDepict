@@ -29,22 +29,16 @@ export async function composeAudioFromDataAnalysis(input: ComposeAudioFromDataAn
   return composeAudioFromDataAnalysisFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'composeAudioFromDataAnalysisPrompt',
-  input: {schema: ComposeAudioFromDataAnalysisInputSchema},
-  output: {
-    schema: ComposeAudioFromDataAnalysisOutputSchema,
-    format: 'json',
-  },
-  prompt: `You are an expert music composer translating data analysis into music theory.
+const promptTemplate = `You are an expert music composer translating data analysis into music theory.
 
 You will make a series of AUTONOMOUS DECISIONS to translate the analysis into music theory. You will decide the key (e.g., C minor for negative sentiment), tempo, instrumentation (e.g., strings for smooth trends, percussive hits for outliers), and the precise mapping of data values to musical notes (pitch, duration, velocity).
 
 Here is the data analysis:
 {{{analysis}}}
 
-Output the final audioMapping JSON object, which serves as the "sheet music".`,
-});
+Output the final audioMapping JSON object, which serves as the "sheet music".
+
+CRITICAL: Your response must be a single, valid JSON object and nothing else. Do not include any explanatory text before or after the JSON.`;
 
 const composeAudioFromDataAnalysisFlow = ai.defineFlow(
   {
@@ -53,7 +47,31 @@ const composeAudioFromDataAnalysisFlow = ai.defineFlow(
     outputSchema: ComposeAudioFromDataAnalysisOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const prompt = {
+      prompt: promptTemplate,
+      input,
+    }
+    
+    const generationConfig = {
+      responseMimeType: 'application/json',
+    };
+    
+    console.log("COMPOSER - PROMPT:", prompt.prompt);
+    console.log("COMPOSER - CONFIG:", generationConfig);
+    
+    try {
+      const { output } = await ai.generate({
+        model: ai.model,
+        ...prompt,
+        config: generationConfig,
+        output: {
+          schema: ComposeAudioFromDataAnalysisOutputSchema,
+        },
+      });
+      return output!;
+    } catch (error) {
+      console.error("ERROR in Composer Agent:", error);
+      throw new Error(`Composer Agent failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 );
