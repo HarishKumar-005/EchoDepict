@@ -38,6 +38,7 @@ export function AudioVisualizer({
   
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
 
   const draw = useCallback((waveformValues: Float32Array) => {
     const canvas = canvasRef.current;
@@ -80,25 +81,23 @@ export function AudioVisualizer({
   useEffect(() => {
     if (!composition?.audioMapping) return;
 
-    const setupTone = async () => {
-      partRef.current?.dispose();
-      synthRef.current?.dispose();
+    // Dispose previous instances if they exist
+    partRef.current?.dispose();
+    synthRef.current?.dispose();
 
-      synthRef.current = new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'amsine' },
-          envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 }
-      }).toDestination();
-      waveformRef.current = new Tone.Waveform(1024);
-      Tone.Destination.connect(waveformRef.current);
-      
-      partRef.current = new Tone.Part((time, value) => {
-        synthRef.current?.triggerAttackRelease(value.note, value.duration, time, value.velocity);
-      }, composition.audioMapping.dataMapping).start(0);
+    synthRef.current = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'amsine' },
+        envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 }
+    }).toDestination();
+    waveformRef.current = new Tone.Waveform(1024);
+    Tone.Destination.connect(waveformRef.current);
+    
+    partRef.current = new Tone.Part((time, value) => {
+      synthRef.current?.triggerAttackRelease(value.note, value.duration, time, value.velocity);
+    }, composition.audioMapping.dataMapping).start(0);
 
-      Tone.Transport.bpm.value = composition.audioMapping.tempo;
-    };
-
-    setupTone();
+    Tone.Transport.bpm.value = composition.audioMapping.tempo;
+    setIsAudioReady(false); // Reset ready state for new composition
 
     return () => {
       Tone.Transport.stop();
@@ -126,7 +125,11 @@ export function AudioVisualizer({
 
   const handlePlayPause = useCallback(async () => {
     if (!composition) return;
-    await Tone.start();
+    
+    if (!isAudioReady) {
+      await Tone.start();
+      setIsAudioReady(true);
+    }
     
     if (Tone.Transport.state === 'started') {
       Tone.Transport.pause();
@@ -136,7 +139,7 @@ export function AudioVisualizer({
       Tone.Transport.start();
       setIsPlaying(true);
     }
-  }, [composition, setIsPlaying, scheduleStop]);
+  }, [composition, setIsPlaying, scheduleStop, isAudioReady]);
 
   const handleScrubberChange = useCallback((value: number[]) => {
       if (!composition) return;
