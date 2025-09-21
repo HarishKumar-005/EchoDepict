@@ -9,7 +9,7 @@ export function Header() {
           <Music4 className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">EchoDepict</h1>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight text-foreground">EchoDepict</h1>
           <p className="text-xs text-muted-foreground -mt-1">The AI Multi-Agent Aural Intelligence System</p>
         </div>
       </div>

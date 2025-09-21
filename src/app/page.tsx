@@ -63,7 +63,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-body antialiased">
+    <div className="flex flex-col h-screen bg-background text-foreground font-sans antialiased">
       <Header />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 p-4 lg:p-6 overflow-hidden">
         {/* Left Panel */}
@@ -95,9 +95,9 @@ export default function Home() {
               </div>
             ) : (
                <Card className="h-full min-h-[300px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed">
-                  <BrainCircuit className="h-16 w-16 text-primary mb-4" />
-                  <h3 className="text-2xl font-bold text-primary mb-2">Aura UI</h3>
-                  <p className="text-muted-foreground">Your generated audio landscape will appear here. <br/> Start by providing data or a concept.</p>
+                  <BrainCircuit className="h-12 w-12 lg:h-16 lg:w-16 text-primary mb-4" />
+                  <h3 className="text-xl lg:text-2xl font-bold text-primary mb-2">Aura UI</h3>
+                  <p className="text-sm lg:text-base text-muted-foreground">Your generated audio landscape will appear here. <br/> Start by providing data or a concept.</p>
                </Card>
             )}
           </div>
@@ -112,9 +112,9 @@ export default function Home() {
                 />
              ) : (
                 <Card className="h-full min-h-[200px] lg:min-h-0 flex flex-col items-center justify-center text-center p-8 border-dashed">
-                  <BotMessageSquare className="h-16 w-16 text-primary mb-4" />
-                  <h3 className="text-xl font-bold text-foreground mb-2">AI Narrator</h3>
-                  <p className="text-muted-foreground">The AI-generated script will be displayed here, synchronized with the audio.</p>
+                  <BotMessageSquare className="h-12 w-12 lg:h-16 lg:w-16 text-primary mb-4" />
+                  <h3 className="text-lg lg:text-xl font-bold text-foreground mb-2">AI Narrator</h3>
+                  <p className="text-sm lg:text-base text-muted-foreground">The AI-generated script will be displayed here, synchronized with the audio.</p>
                 </Card>
              )}
           </div>

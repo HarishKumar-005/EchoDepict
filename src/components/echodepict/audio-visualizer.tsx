@@ -51,6 +51,7 @@ export function AudioVisualizer({
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     const primaryColor = `hsl(${primaryHsl})`;
     const isDarkMode = document.documentElement.classList.contains('dark');
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue(isDarkMode ? '--background' : '--card').trim();
 
     const numBars = fftValues.length;
     const barWidth = width / numBars;
@@ -75,7 +76,7 @@ export function AudioVisualizer({
         
         // Gradient for bars
         const gradient = context.createLinearGradient(x, centerY, x, centerY - barHeight);
-        gradient.addColorStop(0, isDarkMode ? 'hsl(222.2 84% 4.9% / 0)' : 'hsl(210 40% 98% / 0)');
+        gradient.addColorStop(0, `hsla(${bgColor}, 0)`);
         gradient.addColorStop(1, primaryColor);
 
         context.fillStyle = gradient;
@@ -196,7 +197,7 @@ export function AudioVisualizer({
             cancelAnimationFrame(animationFrameId.current);
             animationFrameId.current = undefined;
         }
-        if (currentTime === 0) {
+        if (currentTime === 0 && canvas) {
             // Clear canvas when not playing and at the start
             context.clearRect(0, 0, canvas.width, canvas.height);
         }
