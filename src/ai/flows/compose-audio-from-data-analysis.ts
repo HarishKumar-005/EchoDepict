@@ -15,12 +15,19 @@ const ComposeAudioFromDataAnalysisInputSchema = z.object({
 });
 export type ComposeAudioFromDataAnalysisInput = z.infer<typeof ComposeAudioFromDataAnalysisInputSchema>;
 
+const NoteSchema = z.object({
+    time: z.number().describe('The time in seconds when the note should start.'),
+    note: z.string().describe('The musical pitch, e.g., "C4", "F#5".'),
+    duration: z.number().describe('The duration of the note in seconds.'),
+    velocity: z.number().min(0).max(1).describe('The velocity (loudness) of the note, from 0.0 to 1.0.'),
+});
+
 const ComposeAudioFromDataAnalysisOutputSchema = z.object({
   audioMapping: z.object({
     key: z.string().describe('The key of the composition (e.g., C minor).'),
     tempo: z.number().describe('The tempo of the composition in BPM.'),
     instrumentation: z.array(z.string()).describe('The instruments used in the composition.'),
-    dataMapping: z.record(z.string(), z.any()).describe('The mapping of data values to musical notes (pitch, duration, velocity).'),
+    dataMapping: z.array(NoteSchema).describe('An array of musical notes, each representing a data point with time, pitch, duration, and velocity.'),
   }).describe('A detailed JSON object mapping data points to audio parameters.'),
 });
 export type ComposeAudioFromDataAnalysisOutput = z.infer<typeof ComposeAudioFromDataAnalysisOutputSchema>;
@@ -31,7 +38,9 @@ export async function composeAudioFromDataAnalysis(input: ComposeAudioFromDataAn
 
 const promptTemplate = `You are an expert music composer translating data analysis into music theory.
 
-You will make a series of AUTONOMOUS DECISIONS to translate the analysis into music theory. You will decide the key (e.g., C minor for negative sentiment), tempo, instrumentation (e.g., strings for smooth trends, percussive hits for outliers), and the precise mapping of data values to musical notes (pitch, duration, velocity).
+You will make a series of AUTONOMOUS DECISIONS to translate the analysis into music theory. You will decide the key (e.g., C minor for negative sentiment), tempo, instrumentation (e.g., strings for smooth trends, percussive hits for outliers), and the precise mapping of data values to musical notes.
+
+The output for 'dataMapping' MUST be an array of note objects. Each object in the array represents a single musical note and must have the following properties: 'time' (start time in seconds), 'note' (the pitch, e.g., "C4"), 'duration' (in seconds), and 'velocity' (loudness from 0.0 to 1.0).
 
 Here is the data analysis:
 {{{analysis}}}
@@ -47,20 +56,14 @@ const composeAudioFromDataAnalysisFlow = ai.defineFlow(
     outputSchema: ComposeAudioFromDataAnalysisOutputSchema,
   },
   async input => {
-    const generationConfig = {
-      responseMimeType: 'application/json',
-    };
-    
     const fullPrompt = promptTemplate.replace('{{{analysis}}}', input.analysis);
     
     console.log("COMPOSER - PROMPT:", fullPrompt);
-    console.log("COMPOSER - CONFIG:", generationConfig);
     
     try {
       const { output } = await ai.generate({
         model: 'googleai/gemini-1.5-flash',
         prompt: fullPrompt,
-        config: generationConfig,
         output: {
           schema: ComposeAudioFromDataAnalysisOutputSchema,
         },
