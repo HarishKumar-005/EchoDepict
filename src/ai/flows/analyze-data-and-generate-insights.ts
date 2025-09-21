@@ -50,22 +50,21 @@ const analyzeDataAndGenerateInsightsFlow = ai.defineFlow(
   },
   async input => {
     
-    const prompt = {
-      prompt: promptTemplate,
-      input,
-    }
-    
     const generationConfig = {
       responseMimeType: 'application/json',
     };
     
-    console.log("ANALYZER - PROMPT:", prompt.prompt);
+    const fullPrompt = promptTemplate
+      .replace('{{inputType}}', input.inputType)
+      .replace('{{{inputData}}}', input.inputData);
+
+    console.log("ANALYZER - PROMPT:", fullPrompt);
     console.log("ANALYZER - CONFIG:", generationConfig);
 
     try {
       const { output } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash',
-        ...prompt,
+        model: 'googleai/gemini-1.5-flash',
+        prompt: fullPrompt,
         config: generationConfig,
         output: {
           schema: AnalyzeDataAndGenerateInsightsOutputSchema,

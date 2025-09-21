@@ -47,22 +47,19 @@ const composeAudioFromDataAnalysisFlow = ai.defineFlow(
     outputSchema: ComposeAudioFromDataAnalysisOutputSchema,
   },
   async input => {
-    const prompt = {
-      prompt: promptTemplate,
-      input,
-    }
-    
     const generationConfig = {
       responseMimeType: 'application/json',
     };
     
-    console.log("COMPOSER - PROMPT:", prompt.prompt);
+    const fullPrompt = promptTemplate.replace('{{{analysis}}}', input.analysis);
+    
+    console.log("COMPOSER - PROMPT:", fullPrompt);
     console.log("COMPOSER - CONFIG:", generationConfig);
     
     try {
       const { output } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash',
-        ...prompt,
+        model: 'googleai/gemini-1.5-flash',
+        prompt: fullPrompt,
         config: generationConfig,
         output: {
           schema: ComposeAudioFromDataAnalysisOutputSchema,

@@ -64,22 +64,21 @@ const generateTimedNarrativeFlow = ai.defineFlow(
     outputSchema: GenerateTimedNarrativeOutputSchema,
   },
   async input => {
-    const prompt = {
-      prompt: promptTemplate,
-      input,
-    }
-    
     const generationConfig = {
       responseMimeType: 'application/json',
     };
+    
+    const fullPrompt = promptTemplate
+      .replace('{{{analysis}}}', input.analysis)
+      .replace('{{{audioMapping}}}', input.audioMapping);
 
-    console.log("NARRATOR - PROMPT:", prompt.prompt);
+    console.log("NARRATOR - PROMPT:", fullPrompt);
     console.log("NARRATOR - CONFIG:", generationConfig);
 
     try {
       const { output } = await ai.generate({
-        model: 'googleai/gemini-2.5-flash',
-        ...prompt,
+        model: 'googleai/gemini-1.5-flash',
+        prompt: fullPrompt,
         config: generationConfig,
         output: {
           schema: GenerateTimedNarrativeOutputSchema,
