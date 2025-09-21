@@ -174,36 +174,38 @@ export function AudioVisualizer({
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const loop = () => {
-      if (Tone.Transport.state === 'started') {
-        setCurrentTime(Tone.Transport.seconds);
-      }
-
-      if (fftRef.current) {
-        const fftValues = fftRef.current.getValue();
-        if (fftValues instanceof Float32Array) {
-            draw(fftValues, canvas, context);
-        }
-      }
-
-      animationFrameId.current = requestAnimationFrame(loop);
-    };
+    let loop: () => void;
 
     if (isPlaying) {
+      loop = () => {
+        if (Tone.Transport.state === 'started') {
+          setCurrentTime(Tone.Transport.seconds);
+        }
+
+        if (fftRef.current) {
+          const fftValues = fftRef.current.getValue();
+          if (fftValues instanceof Float32Array) {
+              draw(fftValues, canvas, context);
+          }
+        }
         animationFrameId.current = requestAnimationFrame(loop);
+      };
+      animationFrameId.current = requestAnimationFrame(loop);
     } else {
         if (animationFrameId.current) {
             cancelAnimationFrame(animationFrameId.current);
             animationFrameId.current = undefined;
         }
-        // Clear canvas when not playing
-        context.clearRect(0, 0, canvas.width, canvas.height);
+        if (currentTime === 0) {
+            // Clear canvas when not playing and at the start
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
     }
 
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
     };
-  }, [isPlaying, draw, setCurrentTime]);
+  }, [isPlaying, draw, setCurrentTime, currentTime]);
 
   const handlePlayPause = useCallback(async () => {
     if (!composition) return;
@@ -254,15 +256,15 @@ export function AudioVisualizer({
       <CardContent className="flex-1 flex items-center justify-center p-0 relative">
         {isLoading ? (
           <div className="flex flex-col items-center gap-4 text-muted-foreground z-10">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <Loader2 className="h-10 w-10 md:h-16 md:w-16 animate-spin text-primary" />
             <p className="font-semibold text-primary">Agents are composing...</p>
           </div>
         ) : (
           <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
         )}
       </CardContent>
-      <CardFooter className="flex flex-col gap-3 pt-4 border-t">
-        <div className="w-full flex items-center gap-4 px-2">
+      <CardFooter className="flex flex-col gap-2 md:gap-3 p-2 md:p-4 border-t">
+        <div className="w-full flex items-center gap-2 md:gap-4 px-1 md:px-2">
           <span className="text-xs text-muted-foreground tabular-nums">{formatTime(currentTime)}</span>
           <Slider
             value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
@@ -272,23 +274,23 @@ export function AudioVisualizer({
           />
           <span className="text-xs text-muted-foreground tabular-nums">{formatTime(duration)}</span>
         </div>
-        <div className="w-full flex justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" disabled={!composition || isLoading} onClick={() => setIsMuted(!isMuted)}>
+        <div className="w-full flex justify-between items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-1 md:gap-2">
+            <Button variant="ghost" size="icon" disabled={!composition || isLoading} onClick={() => setIsMuted(!isMuted)} className="w-8 h-8 md:w-10 md:h-10">
               {isMuted || volume === 0 ? <VolumeX className="text-primary" /> : <Volume2 className="text-primary" />}
             </Button>
             <Slider
               value={[volume]}
               onValueChange={(v) => {setVolume(v[0]); setIsMuted(false);}}
-              className="w-24"
+              className="w-16 md:w-24"
               disabled={!composition || isLoading}
             />
           </div>
-          <Button size="lg" onClick={handlePlayPause} disabled={!composition || isLoading} className="w-32 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full">
+          <Button size="lg" onClick={handlePlayPause} disabled={!composition || isLoading} className="w-28 md:w-32 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base md:text-lg rounded-full h-10 md:h-11">
             {isPlaying ? <Pause className="mr-2" /> : <Play className="mr-2" />}
             {isPlaying ? 'Pause' : 'Play'}
           </Button>
-          <div className="w-[72px]"></div> {/* Spacer */}
+          <div className="w-[40px] md:w-[72px]"></div> {/* Spacer */}
         </div>
       </CardFooter>
     </Card>
