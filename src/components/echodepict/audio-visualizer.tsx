@@ -50,8 +50,6 @@ export function AudioVisualizer({
     // Style colors from CSS
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     const primaryColor = `hsl(${primaryHsl})`;
-    const mutedFgHsl = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim();
-    const mutedFgColor = `hsl(${mutedFgHsl})`;
     const isDarkMode = document.documentElement.classList.contains('dark');
 
     const numBars = fftValues.length;
@@ -171,15 +169,6 @@ export function AudioVisualizer({
 
   // Animation loop
   useEffect(() => {
-    if (!isPlaying) {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = undefined;
-      }
-      // Don't reset time here, allow onEnded to handle it
-      return;
-    }
-    
     const canvas = canvasRef.current;
     if (!canvas) return;
     const context = canvas.getContext('2d');
@@ -200,7 +189,16 @@ export function AudioVisualizer({
       animationFrameId.current = requestAnimationFrame(loop);
     };
 
-    animationFrameId.current = requestAnimationFrame(loop);
+    if (isPlaying) {
+        animationFrameId.current = requestAnimationFrame(loop);
+    } else {
+        if (animationFrameId.current) {
+            cancelAnimationFrame(animationFrameId.current);
+            animationFrameId.current = undefined;
+        }
+        // Clear canvas when not playing
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
     return () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
