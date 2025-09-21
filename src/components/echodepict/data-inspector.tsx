@@ -37,14 +37,14 @@ export function DataInspector({ currentTime, composition }: DataInspectorProps) 
   }, [currentTime, composition, currentNote]);
 
   return (
-    <Card className={`mt-6`}>
+    <Card className={`h-full`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Data Inspector</CardTitle>
-        <Info className="h-4 w-4 text-[hsl(var(--luminous-primary))]" />
+        <CardTitle className="text-sm font-bold text-muted-foreground">Data Inspector</CardTitle>
+        <Info className="h-4 w-4 text-primary" />
       </CardHeader>
       <CardContent>
         {currentNote ? (
-          <div className="text-sm space-y-1 text-luminous-primary">
+          <div className="text-sm space-y-1 text-foreground">
             <p><span className="font-semibold text-muted-foreground">Time:</span> {currentNote.time.toFixed(2)}s</p>
             <p><span className="font-semibold text-muted-foreground">Pitch:</span> {currentNote.note}</p>
             <p><span className="font-semibold text-muted-foreground">Duration:</span> {currentNote.duration.toFixed(2)}s</p>

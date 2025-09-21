@@ -52,27 +52,64 @@ export function AudioVisualizer({
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     const primaryColor = `hsl(${primaryHsl})`;
 
-    fftValues.forEach((value, i) => {
-        const percent = (value + 140) / 140; // values are in dB, -140 to 0
-        const barHeight = height * Math.max(0, percent);
+    // "Aurora" effect
+    const data = fftValues.map(v => (v + 140) / 140); // Normalize
 
-        const gradient = context.createLinearGradient(0, height, 0, height - barHeight);
-        gradient.addColorStop(0, 'purple');
-        gradient.addColorStop(1, primaryColor);
+    // Base Wave (Lows)
+    context.fillStyle = 'rgba(75, 0, 130, 0.2)'; // Indigo
+    context.beginPath();
+    context.moveTo(0, height);
+    for (let i = 0; i < data.length; i++) {
+        const lowFreq = data.slice(0, data.length / 4);
+        const avg = lowFreq.reduce((a, b) => a + b, 0) / lowFreq.length;
+        const y = height - (avg * height * 0.3) - Math.sin(i * 0.1 + Date.now() * 0.001) * 10;
+        context.lineTo(i * (width / data.length), y);
+    }
+    context.lineTo(width, height);
+    context.closePath();
+    context.fill();
 
-        context.fillStyle = gradient;
-        context.fillRect(x, height - barHeight, barWidth, barHeight);
-        
-        x += barWidth + 1;
+    // Mid-Range Waves
+    const waveGradient = context.createLinearGradient(0, height * 0.4, 0, height);
+    waveGradient.addColorStop(0, `hsla(${primaryHsl}, 0.5)`); // Cyan
+    waveGradient.addColorStop(1, 'rgba(255, 0, 255, 0.3)'); // Magenta
+    
+    context.fillStyle = waveGradient;
+    context.beginPath();
+    context.moveTo(0, height);
+     for (let i = 0; i < data.length; i++) {
+        const midFreq = data.slice(data.length / 4, data.length / 2);
+        const avg = midFreq.reduce((a, b) => a + b, 0) / midFreq.length;
+        const y = height - (data[i] * height * 0.5) - (avg * height * 0.2) + Math.sin(i * 0.2 + Date.now() * 0.002) * 5;
+        context.lineTo(i * (width / data.length), y);
+    }
+    context.lineTo(width, height);
+    context.closePath();
+    context.fill();
+
+
+    // Sparkle Particles (Highs)
+    context.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    const highFreqData = data.slice(data.length / 2);
+    highFreqData.forEach((val, i) => {
+        if (val > 0.8) { // If high frequency is loud
+            const x = Math.random() * width;
+            const y = (1 - (i / highFreqData.length)) * height * 0.8;
+            const size = Math.random() * 2;
+            context.fillRect(x, y, size, size);
+        }
     });
+
   }, []);
   
   const scheduleStop = useCallback(() => {
-    Tone.Transport.scheduleOnce(() => {
-      Tone.Transport.stop();
-      setIsPlaying(false);
-      onEnded();
-    }, duration);
+    if (duration > 0) {
+      Tone.Transport.scheduleOnce(() => {
+        Tone.Transport.stop();
+        setIsPlaying(false);
+        onEnded();
+      }, duration);
+    }
   }, [duration, setIsPlaying, onEnded]);
 
   // Setup Tone.js instruments and effects
@@ -111,8 +148,11 @@ export function AudioVisualizer({
     if (!isPlaying) {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = undefined;
       }
-      setCurrentTime(0); // Reset time when not playing
+      if (Tone.Transport.state !== 'started') {
+        setCurrentTime(0); // Reset time only if transport is fully stopped
+      }
       return;
     }
     
@@ -128,7 +168,9 @@ export function AudioVisualizer({
 
       if (fftRef.current) {
         const fftValues = fftRef.current.getValue();
-        draw(fftValues as Float32Array, canvas, context);
+        if (fftValues instanceof Float32Array) {
+            draw(fftValues, canvas, context);
+        }
       }
 
       animationFrameId.current = requestAnimationFrame(loop);
@@ -154,24 +196,21 @@ export function AudioVisualizer({
       Tone.Transport.pause();
       setIsPlaying(false);
     } else {
+      if (Tone.Transport.seconds >= duration) {
+        Tone.Transport.seconds = 0;
+      }
       scheduleStop();
       Tone.Transport.start();
       setIsPlaying(true);
     }
-  }, [composition, setIsPlaying, scheduleStop]);
+  }, [composition, setIsPlaying, scheduleStop, duration]);
 
   const handleScrubberChange = useCallback((value: number[]) => {
-      if (!composition) return;
+      if (!composition || duration <= 0) return;
       const newTime = (value[0] / 100) * duration;
       Tone.Transport.seconds = newTime;
       setCurrentTime(newTime);
-      
-      if (Tone.Transport.state === 'started') {
-          Tone.Transport.clear(partRef.current?.id);
-          scheduleStop();
-      }
-
-  }, [composition, duration, setCurrentTime, scheduleStop]);
+  }, [composition, duration, setCurrentTime]);
 
   useEffect(() => {
     const db = isMuted ? -Infinity : (volume / 100) * 30 - 30;
@@ -188,7 +227,7 @@ export function AudioVisualizer({
 
   return (
     <Card className="h-full flex flex-col justify-between overflow-hidden">
-      <CardContent className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6 relative">
+      <CardContent className="flex-1 flex items-center justify-center p-0 relative">
         {isLoading ? (
           <div className="flex flex-col items-center gap-4 text-muted-foreground z-10">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

@@ -69,8 +69,8 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
               className={cn(
                 'transition-all duration-300 text-lg leading-relaxed',
                 index === activeIndex
-                  ? 'text-primary font-semibold scale-105'
-                  : 'text-muted-foreground opacity-40'
+                  ? 'text-primary font-semibold'
+                  : 'text-muted-foreground opacity-50'
               )}
               style={{
                 textShadow: index === activeIndex ? `0 0 10px hsl(var(--primary)/0.7)` : 'none'
@@ -88,7 +88,7 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-primary">AI Narration</CardTitle>
+        <CardTitle className="text-primary font-bold">AI Narration</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         {renderContent()}
