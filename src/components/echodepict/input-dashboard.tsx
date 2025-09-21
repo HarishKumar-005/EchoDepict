@@ -86,14 +86,16 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
     isLoading ||
     (activeTab === 'text' && !textInput.trim()) ||
     (activeTab === 'csv' && !fileContent);
+  
+  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={`h-full flex flex-col ${PanelGradient}`}>
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'text' | 'csv')} className="flex flex-col flex-1">
         <CardHeader>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="text">Describe Concept</TabsTrigger>
-            <TabsTrigger value="csv">Upload Data</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-black/20">
+            <TabsTrigger value="text" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground data-[state=active]:shadow-none">Describe Concept</TabsTrigger>
+            <TabsTrigger value="csv" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary-foreground data-[state=active]:shadow-none">Upload Data</TabsTrigger>
           </TabsList>
         </CardHeader>
         <CardContent className="flex-1">
@@ -102,7 +104,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
               placeholder="Describe a complex process or story for the agents to interpret, e.g., 'the complete lifecycle of a star from nebula to black hole'"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              className="h-full resize-none"
+              className="h-full resize-none bg-black/20 focus-visible:ring-primary/50"
               disabled={isLoading}
             />
           </TabsContent>
@@ -130,7 +132,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
                   <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
                   <p className="font-semibold">Drag & drop a CSV file</p>
                   <p className="text-muted-foreground text-sm">or</p>
-                  <Button variant="outline" size="sm" asChild className="mt-2">
+                  <Button variant="outline" size="sm" asChild className="mt-2 bg-transparent hover:bg-primary/10 hover:text-primary-foreground">
                     <label htmlFor="file-upload" className="cursor-pointer">
                       Browse Files
                     </label>
@@ -142,7 +144,7 @@ export function InputDashboard({ onCompose, isLoading }: InputDashboardProps) {
           </TabsContent>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitDisabled} className="w-full">
+          <Button onClick={handleSubmit} disabled={isSubmitDisabled} className="w-full text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:opacity-90 transition-opacity shadow-[0_0_15px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.7)]">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

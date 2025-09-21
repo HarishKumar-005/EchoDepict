@@ -46,7 +46,7 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
       return (
         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p>Narrator is writing...</p>
+            <p className="text-[hsl(var(--luminous-primary))]">Narrator is writing...</p>
         </div>
       );
     }
@@ -69,7 +69,7 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
               className={cn(
                 'transition-all duration-300 text-lg leading-relaxed',
                 index === activeIndex
-                  ? 'text-primary font-semibold scale-105'
+                  ? 'text-[hsl(var(--luminous-primary))] font-semibold scale-105'
                   : 'text-muted-foreground opacity-60'
               )}
             >
@@ -81,10 +81,12 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
     );
   };
 
+  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
+
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={`h-full flex flex-col ${PanelGradient}`}>
       <CardHeader>
-        <CardTitle>AI Narration</CardTitle>
+        <CardTitle className="text-[hsl(var(--luminous-primary))]">AI Narration</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         {renderContent()}

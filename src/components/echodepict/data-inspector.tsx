@@ -36,15 +36,17 @@ export function DataInspector({ currentTime, composition }: DataInspectorProps) 
     findNote();
   }, [currentTime, composition, currentNote]);
 
+  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
+
   return (
-    <Card className="mt-6">
+    <Card className={`mt-6 ${PanelGradient}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">Data Inspector</CardTitle>
-        <Info className="h-4 w-4 text-muted-foreground" />
+        <Info className="h-4 w-4 text-[hsl(var(--luminous-primary))]" />
       </CardHeader>
       <CardContent>
         {currentNote ? (
-          <div className="text-sm space-y-1">
+          <div className="text-sm space-y-1 text-luminous-primary">
             <p><span className="font-semibold text-muted-foreground">Time:</span> {currentNote.time.toFixed(2)}s</p>
             <p><span className="font-semibold text-muted-foreground">Pitch:</span> {currentNote.note}</p>
             <p><span className="font-semibold text-muted-foreground">Duration:</span> {currentNote.duration.toFixed(2)}s</p>

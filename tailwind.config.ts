@@ -16,6 +16,8 @@ export default {
       },
       colors: {
         background: 'hsl(var(--background))',
+        'background-gradient-start': 'hsl(var(--background-gradient-start))',
+        'background-gradient-end': 'hsl(var(--background-gradient-end))',
         foreground: 'hsl(var(--foreground))',
         card: {
           DEFAULT: 'hsl(var(--card))',
@@ -48,6 +50,10 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        'luminous-primary': 'hsl(var(--luminous-primary))',
+        'luminous-secondary': 'hsl(var(--luminous-secondary))',
+        'panel-gradient-start': 'hsl(var(--panel-gradient-start))',
+        'panel-gradient-end': 'hsl(var(--panel-gradient-end))',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -68,8 +74,8 @@ export default {
       },
       borderRadius: {
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        md: 'calc(var(--radius) - 4px)',
+        sm: 'calc(var(--radius) - 8px)',
       },
       keyframes: {
         'accordion-down': {

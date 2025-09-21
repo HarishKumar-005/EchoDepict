@@ -38,7 +38,7 @@ export function AudioVisualizer({
   
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
-  const [isAudioReady, setIsAudioReady] = useState(false);
+  const isAudioReady = useRef(false);
 
   const draw = useCallback((waveformValues: Float32Array) => {
     const canvas = canvasRef.current;
@@ -48,15 +48,20 @@ export function AudioVisualizer({
 
     const { width, height } = canvas;
     context.clearRect(0, 0, width, height);
+    
+    // Glowing line effect
+    context.shadowBlur = 10;
+    context.shadowColor = 'hsl(var(--primary))';
+    
     context.beginPath();
-    context.lineWidth = 2;
+    context.lineWidth = 2.5;
     context.strokeStyle = 'hsl(var(--primary))';
     
     const sliceWidth = width * 1.0 / waveformValues.length;
     let x = 0;
 
     for (let i = 0; i < waveformValues.length; i++) {
-      const v = waveformValues[i] / 2; // scale down
+      const v = waveformValues[i] / 1.5; // scale down
       const y = v * height + height / 2;
 
       if (i === 0) {
@@ -69,6 +74,9 @@ export function AudioVisualizer({
 
     context.lineTo(width, height / 2);
     context.stroke();
+    
+    // Reset shadow for other drawings if any
+    context.shadowBlur = 0;
   }, []);
 
   const scheduleStop = useCallback(() => {
@@ -81,7 +89,6 @@ export function AudioVisualizer({
   useEffect(() => {
     if (!composition?.audioMapping) return;
 
-    // Dispose previous instances if they exist
     partRef.current?.dispose();
     synthRef.current?.dispose();
 
@@ -97,7 +104,6 @@ export function AudioVisualizer({
     }, composition.audioMapping.dataMapping).start(0);
 
     Tone.Transport.bpm.value = composition.audioMapping.tempo;
-    setIsAudioReady(false); // Reset ready state for new composition
 
     return () => {
       Tone.Transport.stop();
@@ -126,9 +132,10 @@ export function AudioVisualizer({
   const handlePlayPause = useCallback(async () => {
     if (!composition) return;
     
-    if (!isAudioReady) {
+    if (!isAudioReady.current) {
       await Tone.start();
-      setIsAudioReady(true);
+      isAudioReady.current = true;
+      console.log('AudioContext started');
     }
     
     if (Tone.Transport.state === 'started') {
@@ -139,7 +146,7 @@ export function AudioVisualizer({
       Tone.Transport.start();
       setIsPlaying(true);
     }
-  }, [composition, setIsPlaying, scheduleStop, isAudioReady]);
+  }, [composition, setIsPlaying, scheduleStop]);
 
   const handleScrubberChange = useCallback((value: number[]) => {
       if (!composition) return;
@@ -165,19 +172,21 @@ export function AudioVisualizer({
     return `${mins}:${secs}`;
   };
 
+  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
+
   return (
-    <Card className="h-full flex flex-col justify-between">
+    <Card className={`h-full flex flex-col justify-between ${PanelGradient}`}>
       <CardContent className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6">
         {isLoading ? (
           <div className="flex flex-col items-center gap-4 text-muted-foreground">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            <p className="font-semibold">Agents are composing...</p>
+            <p className="font-semibold text-[hsl(var(--luminous-primary))]">Agents are composing...</p>
           </div>
         ) : (
           <canvas ref={canvasRef} className="w-full h-full" />
         )}
       </CardContent>
-      <CardFooter className="flex flex-col gap-2 pt-4">
+      <CardFooter className="flex flex-col gap-3 pt-4">
         <div className="w-full flex items-center gap-4">
           <span className="text-xs text-muted-foreground tabular-nums">{formatTime(currentTime)}</span>
           <Slider
@@ -188,20 +197,23 @@ export function AudioVisualizer({
           />
           <span className="text-xs text-muted-foreground tabular-nums">{formatTime(duration)}</span>
         </div>
-        <div className="w-full flex justify-center items-center gap-4">
-           <Button variant="ghost" size="icon" disabled={!composition || isLoading} onClick={() => setIsMuted(!isMuted)}>
-            {isMuted || volume === 0 ? <VolumeX /> : <Volume2 />}
-          </Button>
-          <Slider
-            value={[volume]}
-            onValueChange={(v) => {setVolume(v[0]); setIsMuted(false);}}
-            className="w-32"
-            disabled={!composition || isLoading}
-          />
-          <Button size="lg" onClick={handlePlayPause} disabled={!composition || isLoading} className="w-24">
+        <div className="w-full flex justify-between items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" disabled={!composition || isLoading} onClick={() => setIsMuted(!isMuted)}>
+              {isMuted || volume === 0 ? <VolumeX className="text-[hsl(var(--luminous-primary))]" /> : <Volume2 className="text-[hsl(var(--luminous-primary))]" />}
+            </Button>
+            <Slider
+              value={[volume]}
+              onValueChange={(v) => {setVolume(v[0]); setIsMuted(false);}}
+              className="w-24"
+              disabled={!composition || isLoading}
+            />
+          </div>
+          <Button size="lg" onClick={handlePlayPause} disabled={!composition || isLoading} className="w-32 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg shadow-[0_0_15px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.7)] transition-shadow">
             {isPlaying ? <Pause className="mr-2" /> : <Play className="mr-2" />}
             {isPlaying ? 'Pause' : 'Play'}
           </Button>
+          <div className="w-[72px]"></div> {/* Spacer */}
         </div>
       </CardFooter>
     </Card>
