@@ -39,6 +39,7 @@ export function AudioVisualizer({
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
   const isAudioReady = useRef(false);
+  const [audioIntensity, setAudioIntensity] = useState(0);
 
   const draw = useCallback((waveformValues: Float32Array) => {
     const canvas = canvasRef.current;
@@ -49,33 +50,49 @@ export function AudioVisualizer({
     const { width, height } = canvas;
     context.clearRect(0, 0, width, height);
     
-    // Glowing line effect
-    context.shadowBlur = 10;
-    context.shadowColor = 'hsl(var(--primary))';
-    
+    // Create fill gradient
+    const fillGradient = context.createLinearGradient(0, 0, 0, height);
+    fillGradient.addColorStop(0, `hsl(var(--primary))`);
+    fillGradient.addColorStop(1, 'transparent');
+
     context.beginPath();
-    context.lineWidth = 2.5;
-    context.strokeStyle = 'hsl(var(--primary))';
-    
+    context.fillStyle = fillGradient;
+
     const sliceWidth = width * 1.0 / waveformValues.length;
     let x = 0;
 
+    context.moveTo(0, height / 2);
     for (let i = 0; i < waveformValues.length; i++) {
-      const v = waveformValues[i] / 1.5; // scale down
-      const y = v * height + height / 2;
-
-      if (i === 0) {
-        context.moveTo(x, y);
-      } else {
-        context.lineTo(x, y);
-      }
+      const v = waveformValues[i] * 0.8; // scale down
+      const y = v * height/2 + height / 2;
+      context.lineTo(x, y);
       x += sliceWidth;
     }
-
     context.lineTo(width, height / 2);
+    context.closePath();
+    context.fill();
+    
+    // Glowing top line
+    context.beginPath();
+    context.lineWidth = 1.5;
+    context.strokeStyle = 'hsl(var(--luminous-primary))';
+    context.shadowBlur = 5;
+    context.shadowColor = 'hsl(var(--luminous-primary))';
+    
+    x=0;
+    for (let i = 0; i < waveformValues.length; i++) {
+        const v = waveformValues[i] * 0.8;
+        const y = v * height/2 + height / 2;
+        if (i === 0) {
+            context.moveTo(x, y);
+        } else {
+            context.lineTo(x, y);
+        }
+        x += sliceWidth;
+    }
     context.stroke();
     
-    // Reset shadow for other drawings if any
+    // Reset shadow
     context.shadowBlur = 0;
   }, []);
 
@@ -118,8 +135,13 @@ export function AudioVisualizer({
       if (Tone.Transport.state === 'started') {
         setCurrentTime(Tone.Transport.seconds);
         if (waveformRef.current) {
-          draw(waveformRef.current.getValue());
+          const values = waveformRef.current.getValue();
+          draw(values);
+          const max = Math.max(...Array.from(values).map(v => Math.abs(v)));
+          setAudioIntensity(Math.min(max * 2, 1)); // Amplify for better visual effect
         }
+      } else {
+        setAudioIntensity(intensity => Math.max(0, intensity - 0.05)); // Fade out glow
       }
       animationFrameId.current = requestAnimationFrame(loop);
     };
@@ -172,10 +194,14 @@ export function AudioVisualizer({
     return `${mins}:${secs}`;
   };
 
-  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
+  const cardStyle = {
+    '--audio-intensity': audioIntensity,
+    boxShadow: `0 0 25px hsl(var(--primary) / var(--audio-intensity))`,
+    transition: 'box-shadow 0.1s ease-out'
+  } as React.CSSProperties;
 
   return (
-    <Card className={`h-full flex flex-col justify-between ${PanelGradient}`}>
+    <Card className={`h-full flex flex-col justify-between`} style={cardStyle}>
       <CardContent className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6">
         {isLoading ? (
           <div className="flex flex-col items-center gap-4 text-muted-foreground">

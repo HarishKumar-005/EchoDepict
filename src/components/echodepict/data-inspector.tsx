@@ -36,12 +36,10 @@ export function DataInspector({ currentTime, composition }: DataInspectorProps) 
     findNote();
   }, [currentTime, composition, currentNote]);
 
-  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
-
   return (
-    <Card className={`mt-6 ${PanelGradient}`}>
+    <Card className={`mt-6`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Data Inspector</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">Data Inspector</CardTitle>
         <Info className="h-4 w-4 text-[hsl(var(--luminous-primary))]" />
       </CardHeader>
       <CardContent>

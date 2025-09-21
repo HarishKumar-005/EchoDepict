@@ -62,7 +62,7 @@ export default function Home() {
     setCurrentTime(0);
   }
 
-  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
+  const PanelGradient = "bg-transparent";
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body antialiased">
@@ -92,7 +92,7 @@ export default function Home() {
                 <DataInspector currentTime={currentTime} composition={composition} />
               </>
             ) : (
-               <Card className={`h-full flex flex-col items-center justify-center text-center p-8 border-dashed ${PanelGradient}`}>
+               <Card className={`h-full flex flex-col items-center justify-center text-center p-8 border-dashed border-white/20`}>
                   <BrainCircuit className="h-16 w-16 text-[hsl(var(--luminous-primary))] mb-4" style={{ filter: 'drop-shadow(0 0 5px hsl(var(--luminous-primary)/0.5))' }} />
                   <h3 className="text-2xl font-semibold text-[hsl(var(--luminous-primary))] mb-2" style={{ textShadow: '0 0 8px hsl(var(--luminous-primary)/0.3)' }}>Auralis Studio</h3>
                   <p className="text-muted-foreground">Your generated audio landscape will appear here. <br/> Start by providing data or a concept.</p>
@@ -109,7 +109,7 @@ export default function Home() {
                   isLoading={isLoading}
                 />
              ) : (
-                <Card className={`h-full flex flex-col items-center justify-center text-center p-8 border-dashed ${PanelGradient}`}>
+                <Card className={`h-full flex flex-col items-center justify-center text-center p-8 border-dashed border-white/20`}>
                   <BotMessageSquare className="h-16 w-16 text-[hsl(var(--luminous-primary))] mb-4" />
                   <h3 className="text-xl font-semibold text-foreground mb-2">AI Narrator</h3>
                   <p className="text-muted-foreground">The AI-generated script will be displayed here, synchronized with the audio.</p>

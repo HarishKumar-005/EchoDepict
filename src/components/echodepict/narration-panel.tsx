@@ -70,8 +70,11 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
                 'transition-all duration-300 text-lg leading-relaxed',
                 index === activeIndex
                   ? 'text-[hsl(var(--luminous-primary))] font-semibold scale-105'
-                  : 'text-muted-foreground opacity-60'
+                  : 'text-muted-foreground opacity-40'
               )}
+              style={{
+                textShadow: index === activeIndex ? `0 0 10px hsl(var(--luminous-primary)/0.7)` : 'none'
+              }}
             >
               {line.text}
             </li>
@@ -81,10 +84,9 @@ export function NarrationPanel({ script, currentTime, isLoading }: NarrationPane
     );
   };
 
-  const PanelGradient = "bg-gradient-to-br from-[hsl(var(--panel-gradient-start))] to-[hsl(var(--panel-gradient-end))]";
 
   return (
-    <Card className={`h-full flex flex-col ${PanelGradient}`}>
+    <Card className={`h-full flex flex-col`}>
       <CardHeader>
         <CardTitle className="text-[hsl(var(--luminous-primary))]">AI Narration</CardTitle>
       </CardHeader>
