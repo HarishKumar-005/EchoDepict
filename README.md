@@ -1,10 +1,6 @@
 # EchoDepict
 ### The AI Multi-Agent Aural Intelligence System
 
-**[Live Demo Link (Coming Soon)]()** | **[Watch the Demo Video (Coming Soon)]()**
-
-![EchoDepict Application Screenshot](URL_TO_YOUR_SCREENSHOT_HERE)
-
 ## 💡 Project Motivation & Impact
 In a world dominated by visual data representation, a significant barrier exists for individuals with visual impairments and for auditory learners who process information more effectively through sound. Data is everywhere, but its insights are often locked away in charts and graphs. EchoDepict shatters this barrier by creating a new sense for data analysis. It translates complex datasets and abstract concepts into rich, narrated audio soundscapes, making information accessible and understandable in an entirely new way. Our project champions a more inclusive and multi-sensory approach to data, with profound impacts on accessibility in education, research, and beyond.
 
